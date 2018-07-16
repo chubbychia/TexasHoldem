@@ -287,7 +287,7 @@ def evaluate_river(hole_cards, board_cards, data):
     win_all_prob = calc_win_prob_by_sampling_max(10000,hole_cards, board_cards, data)
     ev = expected_value(win_all_prob, data["self"]["minBet"])
 
-    if ev < -100:
+    if ev < -300:
         print "==== Fold because of EV too small: %d, win_prob : %f" % (ev, win_all_prob)
         take_action("fold")
     elif win_all_prob >= 0.8:
@@ -297,8 +297,6 @@ def evaluate_river(hole_cards, board_cards, data):
         take_action("bet", amount)
     elif win_all_prob >= 0.3:
         take_action("call")
-    elif ev >= 0 and win_all_prob >= 0.2:
-        take_action("check")
     else:
         take_action("fold")
 
@@ -310,16 +308,16 @@ def evaluate_turn(hole_cards, board_cards, data):
     win_all_prob = calc_win_prob_by_sampling_max(10000,hole_cards, board_cards, data)
     ev = expected_value(win_all_prob, data["self"]["minBet"])
 
-    if ev < -100:
+    if ev < -300:
         print "==== Fold because of EV too small: %d, win_prob : %f" % (ev, win_all_prob)
         take_action("fold")
     elif win_all_prob >= 0.8:
         amount = 0.2 * data["self"]["chips"] + data["self"]["minBet"]
         take_action("bet", amount)
-    elif win_all_prob >= 0.5:
+    elif win_all_prob >= 0.6:
         amount = min(ev, 0.1 * data["self"]["chips"] + data["self"]["minBet"])
         take_action("bet", amount)
-    elif win_all_prob >= 0.4:
+    elif win_all_prob >= 0.3 and ev>=0:
         take_action("call")
     else:
         take_action("fold")
@@ -332,7 +330,7 @@ def evaluate_flop(hole_cards, board_cards, data):
     win_all_prob = calc_win_prob_by_sampling_min(10000,hole_cards, board_cards, data)
     ev = expected_value(win_all_prob, data["self"]["minBet"])
 
-    if ev < -100:
+    if ev < -300:
         print "==== Fold because of EV too small: %d, win_prob : %f" % (ev, win_all_prob)
         take_action("fold")
     elif win_all_prob >= 0.8:
@@ -341,10 +339,8 @@ def evaluate_flop(hole_cards, board_cards, data):
     elif win_all_prob >= 0.7:
         amount = min(ev, 0.05 * data["self"]["chips"] + data["self"]["minBet"])
         take_action("bet", amount)
-    elif win_all_prob >= 0.2:
+    elif win_all_prob >= 0.3 and ev>=0:
         take_action("call")
-    elif ev >= 0 and win_all_prob >= 0.1:
-        take_action("check")
     else:
         take_action("fold")
 
@@ -365,17 +361,14 @@ def evaluate_deal(hole_cards, data):
     ev = expected_value(basic_win_porb, data["self"]["minBet"])
     
     # In case someone all-in in the beginning
-    if ev < -100:
+    if ev < -300:
         print "==== Fold because of EV too small: %d, win_prob : %f" % (ev, win_prob)
         take_action("fold")
     elif win_prob >= 0.9:
         print "==== Judgement is raise ==== win_prob : %f ,EV : %d" % (win_prob, ev)
         amount = 1.5 * (data["self"]["minBet"] + 10)
         take_action("bet", amount)
-    elif win_prob >= 0.15:
-        print "==== Judgement is call ==== win_prob : %f ,EV : %d" % (win_prob, ev)
-        take_action("call")
-    elif ev >= 0 and win_prob >= 0.1:
+    elif win_prob >= 0.1:
         print "==== Judgement is call ==== win_prob : %f ,EV : %d" % (win_prob, ev)
         take_action("call")
     else:
@@ -473,6 +466,7 @@ def react(event, data):
                     print "==== Round end : Cheer up! ==== Loss bet : %d" % (my_bet)
     # Reset my accumulating bet, pot, player count in every stage, and every actions count
     elif event == "__new_round":
+        print "==== New round table no. %s ====" % (data["table"]["tableNumber"])
         my_bet = 0
         pot = 0
         allin_count = dict()
@@ -516,6 +510,7 @@ def doListen():
     try:
         global ws
         ws = create_connection("ws://poker-training.vtr.trendnet.org:3001/")
+        #ws = create_connection("ws://poker-dev.wrs.club:3001/")
         ws.send(json.dumps({
             "eventName": "__join",
             "data": {
