@@ -327,7 +327,7 @@ def evaluate_flop(hole_cards, board_cards, data):
     """
     Decide action in flop stage
     """
-    win_all_prob = calc_win_prob_by_sampling_min(10000,hole_cards, board_cards, data)
+    win_all_prob = calc_win_prob_by_sampling_max(10000,hole_cards, board_cards, data)
     ev = expected_value(win_all_prob, data["self"]["minBet"])
 
     if ev < -300:
