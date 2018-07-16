@@ -241,10 +241,10 @@ def transform_sampling(sim_num,hole_cards, board_cards, data, is_max):
             continue
         
         if is_max:
-            if my_rank >= max(rival_rank):
+            if my_rank <= max(rival_rank):
                 win += 1
         else:
-            if my_rank >= min(rival_rank):
+            if my_rank <= min(rival_rank):
                 win += 1        
         succeeded_sample += 1
     return (win,succeeded_sample)
