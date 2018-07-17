@@ -7,11 +7,13 @@ import hashlib
 from websocket import create_connection
 import random
 import sys
+
 sys.path.insert(0, "holdem_calc")
 import holdem_calc
 import deuces
 from pokereval.hand_evaluator import HandEvaluator
 from pokereval.card import Card
+import eval7
 
 # pip install websocket-client
 
@@ -26,27 +28,28 @@ allin_count = dict()
 raise_count = dict()
 bet_count = dict()
 player_count = {
-    "Deal" : 0,
-    "Flop" : 0,
-    "Turn" : 0,
-    "River" : 0
+    "Deal": 0,
+    "Flop": 0,
+    "Turn": 0,
+    "River": 0
 }
 
 card_to_score = {
-    "2" : 2,
-    "3" : 3,
-    "4" : 4,
-    "5" : 5,
-    "6" : 6,
-    "7" : 7,
-    "8" : 8,
-    "9" : 9,
-    "T" : 10,
-    "J" : 11,
-    "Q" : 12,
-    "K" : 13,
-    "A" : 14
+    "2": 2,
+    "3": 3,
+    "4": 4,
+    "5": 5,
+    "6": 6,
+    "7": 7,
+    "8": 8,
+    "9": 9,
+    "T": 10,
+    "J": 11,
+    "Q": 12,
+    "K": 13,
+    "A": 14
 }
+
 
 def take_action(action="check", amount=0):
     """
@@ -58,15 +61,14 @@ def take_action(action="check", amount=0):
     global request_minbet
 
     if (request_bet_action == 1) \
-        and action in ["check","call","raise","allin"]:
-            action = "bet"
-            if (int(amount) == 0):
-                amount = request_minbet
-
+            and action in ["check", "call", "raise", "allin"]:
+        action = "bet"
+        if (int(amount) == 0):
+            amount = request_minbet
 
     if ("bet" in my_round_action or "raise" in my_round_action) \
-        and action in ["bet", "raise"]:
-            action = "call"
+            and action in ["bet", "raise"]:
+        action = "call"
 
     message = {
         "eventName": "__action",
@@ -76,8 +78,9 @@ def take_action(action="check", amount=0):
     message["data"]["action"] = action
     message["data"]["amount"] = int(amount)
     ws.send(json.dumps(message))
-    print "==== Take Action ==== : %s " % (json.dumps(message))    
+    print "==== Take Action ==== : %s " % (json.dumps(message))
     action_taken = True
+
 
 def expected_value(win_prob, min_bet):
     """
@@ -87,6 +90,7 @@ def expected_value(win_prob, min_bet):
     EV = (((pot + min_bet) * win_prob) - min_bet)
     print "==== Expected value ==== %d" % EV
     return (((pot + min_bet) * win_prob) - min_bet)
+
 
 def hole_cards_score(hole_cards):
     """
@@ -100,7 +104,7 @@ def hole_cards_score(hole_cards):
 
     base_score = card_to_score[hole_cards[0][0]] + card_to_score[hole_cards[1][0]]
     if base_score > 20:
-        high_card =  base_score - 20
+        high_card = base_score - 20
 
     if hole_cards[0][1] == hole_cards[1][1]:
         same_suit = 2
@@ -115,7 +119,8 @@ def hole_cards_score(hole_cards):
     if value_diff == 0:
         pair = 10
 
-    return (pair + same_suit + high_card + possible_straight ) * base_score
+    return (pair + same_suit + high_card + possible_straight) * base_score
+
 
 def update_player_count(data):
     """
@@ -127,6 +132,7 @@ def update_player_count(data):
         if player["isSurvive"] and not player["folded"]:
             count += 1
     player_count[data["table"]["roundName"]] = count
+
 
 def player_statistics(players):
     """
@@ -143,7 +149,7 @@ def player_statistics(players):
     p_stat["v_allin"] = sum(allin_count.values())
     for player in players:
         if not player["playerName"] == my_md5 \
-            and not player["folded"]:
+                and not player["folded"]:
             playing += 1
             if player["allIn"]:
                 p_stat["v_allin"] += 2
@@ -159,6 +165,7 @@ def player_statistics(players):
 
     return p_stat
 
+
 def virtual_player_count(data):
     """
     Return virtual player count
@@ -166,31 +173,32 @@ def virtual_player_count(data):
     """
     players_stat = player_statistics(data["game"]["players"])
     v_players = int(players_stat["base_line"]
-            + players_stat["v_bet"]
-            + players_stat["v_raise"]
-            + players_stat["v_allin"])
+                    + players_stat["v_bet"]
+                    + players_stat["v_raise"]
+                    + players_stat["v_allin"])
     print "==== Virtual player count ==== %d  = %d + %d + %d + %d" \
-            % (v_players,
-               players_stat["base_line"],
-               players_stat["v_bet"],
-               players_stat["v_raise"],
-               players_stat["v_allin"])
+          % (v_players,
+             players_stat["base_line"],
+             players_stat["v_bet"],
+             players_stat["v_raise"],
+             players_stat["v_allin"])
     return v_players
 
-def calc_win_prob_by_sampling_min(sim_num,hole_cards, board_cards, data):
+
+def calc_win_prob_by_sampling_min(sim_num, hole_cards, board_cards, data):
     """
     Calculate the probability to win current players by sampling unknown cards
     Compute the probability to win one player first
     And then take the power of virtual player count
     """
-    win, succeeded_sample = transform_sampling(sim_num, hole_cards, board_cards, data, 'false') 
+    win, succeeded_sample = transform_sampling(sim_num, hole_cards, board_cards, data, 'false')
     print "==== sampling result ==== win : %d, total : %d" % (win, succeeded_sample)
-    win_one_prob = win/float(succeeded_sample)
+    win_one_prob = win / float(succeeded_sample)
     print "==== Win strongest probability ==== " + str(win_one_prob)
     return win_one_prob
 
-def transform_sampling(sim_num,hole_cards, board_cards, data, is_max):
 
+def transform_sampling(sim_num, hole_cards, board_cards, data, is_max):
     eval_hand = [getCard(card) for card in (hole_cards)]
     eval_board = [getCard(card) for card in (board_cards)]
     d_hands = [deuces.Card.new(card) for card in hole_cards]
@@ -221,58 +229,129 @@ def transform_sampling(sim_num,hole_cards, board_cards, data, is_max):
     win = 0
     succeeded_sample = 0
     num_players = player_count[str(data["game"]["roundName"])]
-    #print "Count max? %s" % is_max
+    # print "Count max? %s" % is_max
     for i in range(sim_num):
         board_cards_to_draw = 5 - len(eval_board)
-        e_board_sample = eval_board + _pick_unused_card(board_cards_to_draw, eval_board + eval_hand) # exclude my cards and community cards
-        unused_cards = _pick_unused_card((num_players-1)*2, eval_hand + e_board_sample)
+        e_board_sample = eval_board + _pick_unused_card(board_cards_to_draw,
+                                                        eval_board + eval_hand)  # exclude my cards and community cards
+        unused_cards = _pick_unused_card((num_players - 1) * 2, eval_hand + e_board_sample)
         e_opponents_hole = [unused_cards[2 * i:2 * i + 2] for i in range(num_players - 1)]
 
         d_oppo_sample = []
         d_oppo_set = []
-        d_board_sample = []        
-        for evalcard in e_board_sample: # pokereval Card type
-            s_hand = str(RANK_TO_STRING[evalcard.rank])+str(SUIT_TO_STRING[evalcard.suit])
+        d_board_sample = []
+        for evalcard in e_board_sample:  # pokereval Card type
+            s_hand = str(RANK_TO_STRING[evalcard.rank]) + str(SUIT_TO_STRING[evalcard.suit])
             d_board_card = deuces.Card.new(s_hand)
             d_board_sample.append(d_board_card)
-        
+
         for evalcardset in e_opponents_hole:
             for e_card in evalcardset:
-                s_hand = str(RANK_TO_STRING[e_card.rank])+str(SUIT_TO_STRING[e_card.suit])
+                s_hand = str(RANK_TO_STRING[e_card.rank]) + str(SUIT_TO_STRING[e_card.suit])
                 d_oppo_card = deuces.Card.new(s_hand)
                 d_oppo_set.append(d_oppo_card)
             d_oppo_sample.append(d_oppo_set)
             d_oppo_set = []
-        
+
         try:
             my_rank = evaluator.evaluate(d_hands, d_board_sample)
             rival_rank = [evaluator.evaluate(opp_hole, d_board_sample) for opp_hole in d_oppo_sample]
-           
+
         except:
             continue
-        
+
         if is_max:
             if my_rank <= max(rival_rank):
                 win += 1
         else:
             if my_rank <= min(rival_rank):
-                win += 1        
+                win += 1
         succeeded_sample += 1
-    return (win,succeeded_sample)
+    return (win, succeeded_sample)
 
-def calc_win_prob_by_sampling_max(sim_num,hole_cards, board_cards, data):
+
+def get_rivals_count(data):
+    count = 0
+    for player in data['game']['players']:
+        if player["isSurvive"] and not player["folded"]:
+            count += 1
+    return count
+
+
+def calc_win_prob_by_sampling_eval7(sim_num, hole_cards, board_cards, data):
     """
     Calculate the probability to win current players by sampling unknown cards
     Compute the probability to win one player first
     And then take the power of virtual player count
     """
-  
+    o_hole_cards = []
+    o_board_cards = []
+    deck = eval7.Deck()
+    # remove hole cards and board cards from deck
+    for card in hole_cards:
+        card = eval7.Card(card)
+        o_hole_cards.append(card)
+        deck.cards.remove(card)
+    board_cards_to_draw = 5
+    for card in board_cards:
+        board_cards_to_draw -= 1
+        card = eval7.Card(card)
+        o_board_cards.append(card)
+        deck.cards.remove(card)
+    vpc_weighted = 1
+    rivals_count = get_rivals_count(data)
+    win = 0
+    succeeded_sample = 0
+    start = time.time()
+    if board_cards_to_draw:
+        for _ in range(sim_num // rivals_count):
+            simulate_cards = deck.sample(board_cards_to_draw + 2 * rivals_count)
+            o_board_sample = o_board_cards + simulate_cards[:board_cards_to_draw]
+            my_rank = eval7.evaluate(o_board_sample + o_hole_cards)
+            won = True
+            for i in range(board_cards_to_draw, board_cards_to_draw + 2 * rivals_count, 2):
+                if my_rank < eval7.evaluate(o_board_sample + simulate_cards[i:i + 2]):
+                    won = False
+                    break
+            if won:
+                win += 1
+            succeeded_sample += 1
+    else:
+        my_rank = eval7.evaluate(o_board_cards + o_hole_cards)
+        n = sim_num * 1.1
+        for _ in range(n // rivals_count):
+            won = True
+            simulate_cards = deck.sample(2 * rivals_count)
+            for i in range(0, 2 * rivals_count, 2):
+                if my_rank < eval7.evaluate(o_board_cards + simulate_cards[i:i + 2]):
+                    won = False
+                    break
+            if won:
+                win += 1
+            succeeded_sample += 1
+    print("==== sampling result ==== win : %d, total : %d, takes: %f seconds" %
+          (win, succeeded_sample, time.time() - start))
+    win_one_prob = win * vpc_weighted / succeeded_sample
+
+    # win_all_prob = win_one_prob ** virtual_player_count(data)
+    print("==== Win probability ==== " + str(win_one_prob))
+    return win_one_prob
+
+
+def calc_win_prob_by_sampling_max(sim_num, hole_cards, board_cards, data):
+    """
+    Calculate the probability to win current players by sampling unknown cards
+    Compute the probability to win one player first
+    And then take the power of virtual player count
+    """
+
     win, succeeded_sample = transform_sampling(sim_num, hole_cards, board_cards, data, 'true')
     print "==== Sampling result ==== win : %d, total : %d" % (win, succeeded_sample)
-    win_one_prob = win/float(succeeded_sample)
-    #win_all_prob = win_one_prob ** virtual_player_count(data)
+    win_one_prob = win / float(succeeded_sample)
+    # win_all_prob = win_one_prob ** virtual_player_count(data)
     print "==== Win weakest probability ==== " + str(win_one_prob)
     return win_one_prob
+
 
 def calc_win_prob(hole_cards, board_cards, data):
     """
@@ -290,12 +369,13 @@ def calc_win_prob(hole_cards, board_cards, data):
     print "==== Win probability ==== " + str(win_all_prob)
     return win_all_prob
 
+
 def evaluate_river(hole_cards, board_cards, data):
     """
     Decide action in river stage
     """
-    #win_all_prob = calc_win_prob(hole_cards, board_cards, data)
-    win_all_prob = calc_win_prob_by_sampling_min(10000,hole_cards, board_cards, data)
+    # win_all_prob = calc_win_prob(hole_cards, board_cards, data)
+    win_all_prob = calc_win_prob_by_sampling_min(10000, hole_cards, board_cards, data)
     ev = expected_value(win_all_prob, data["self"]["minBet"])
 
     if ev < -500:
@@ -311,18 +391,19 @@ def evaluate_river(hole_cards, board_cards, data):
         take_action("bet", amount)
     elif win_all_prob >= 0.5:
         amount = min(ev, 0.2 * data["self"]["chips"] + data["self"]["minBet"])
-        take_action("bet", amount)    
+        take_action("bet", amount)
     elif win_all_prob >= 0.4:
         take_action("call")
     else:
         take_action("fold")
 
+
 def evaluate_turn(hole_cards, board_cards, data):
     """
     Decide action in turn stage
     """
-    #win_all_prob = calc_win_prob(hole_cards, board_cards, data)
-    win_all_prob = calc_win_prob_by_sampling_min(10000,hole_cards, board_cards, data)
+    # win_all_prob = calc_win_prob(hole_cards, board_cards, data)
+    win_all_prob = calc_win_prob_by_sampling_min(10000, hole_cards, board_cards, data)
     ev = expected_value(win_all_prob, data["self"]["minBet"])
 
     if ev < -500:
@@ -334,18 +415,19 @@ def evaluate_turn(hole_cards, board_cards, data):
     elif win_all_prob >= 0.6:
         amount = min(ev, 0.2 * data["self"]["chips"] + data["self"]["minBet"])
         take_action("bet", amount)
-    elif win_all_prob >= 0.4 and ev>=0:
+    elif win_all_prob >= 0.4 and ev >= 0:
         take_action("call")
     else:
         take_action("fold")
 
-# Mortecarlo Simulation 
+
+# Mortecarlo Simulation
 def evaluate_flop(hole_cards, board_cards, data):
     """
     Decide action in flop stage
     """
     # Probability of winning the strongest(min) opponent
-    win_all_prob = calc_win_prob_by_sampling_min(10000,hole_cards, board_cards, data)
+    win_all_prob = calc_win_prob_by_sampling_min(10000, hole_cards, board_cards, data)
     ev = expected_value(win_all_prob, data["self"]["minBet"])
 
     if ev < -500:
@@ -357,27 +439,28 @@ def evaluate_flop(hole_cards, board_cards, data):
     elif win_all_prob >= 0.7:
         amount = min(ev, 0.05 * data["self"]["chips"] + data["self"]["minBet"])
         take_action("bet", amount)
-    elif win_all_prob >= 0.3 and ev>=0:
+    elif win_all_prob >= 0.3 and ev >= 0:
         take_action("call")
     else:
         take_action("fold")
+
 
 # Chen formula
 def evaluate_deal(hole_cards, data):
     """
     Decide action in deal(preflop) stage
     """
-    
+
     # Accumulate the bet/raise/allin count for each alived players. Find base line(survived players) for each stage
     v_players = virtual_player_count(data)
     hand = [getCard(card) for card in (hole_cards)]
     # hole_cards: ['7c', '5d']
 
     win_prob = HandEvaluator.Two.evaluate_percentile(hand)
-    
-    basic_win_porb = 1/float(v_players)
+
+    basic_win_porb = 1 / float(v_players)
     ev = expected_value(basic_win_porb, data["self"]["minBet"])
-    
+
     # In case someone all-in in the beginning
     if ev < -500:
         print "==== Fold because of EV too small: %d, win_prob : %f" % (ev, win_prob)
@@ -393,6 +476,7 @@ def evaluate_deal(hole_cards, data):
         print "==== Judgement is fold ==== win_prob : " + str(win_prob)
         take_action("fold")
 
+
 def convert_card_format(card):
     """
     Convert card format so that we could use
@@ -403,20 +487,21 @@ def convert_card_format(card):
         return
     return card[0] + card[1].lower()
 
+
 def evaluate(data):
     """
     Make decision of each stage
     """
 
-    hole_cards  = [convert_card_format(c) for c in data["self"]["cards"]] # ['7C', '5D'] -> ['7c', '5d']
-    board_cards = [convert_card_format(c) for c in data["game"]["board"]] # []
-    print "==== My cards ==== " + str(hole_cards)  #['7c', '5d']
+    hole_cards = [convert_card_format(c) for c in data["self"]["cards"]]  # ['7C', '5D'] -> ['7c', '5d']
+    board_cards = [convert_card_format(c) for c in data["game"]["board"]]  # []
+    print "==== My cards ==== " + str(hole_cards)  # ['7c', '5d']
     print "==== Board ==== " + str(board_cards)
     print "==== Current pot ==== %d" % (pot)
     print "==== My chips ==== %s" % data["self"]["chips"]
 
     # Action strategy for each stage
-    if data["game"]["roundName"] == "Deal": #Preflop
+    if data["game"]["roundName"] == "Deal":  # Preflop
         evaluate_deal(hole_cards, data)
     elif data["game"]["roundName"] == "Flop":
         evaluate_flop(hole_cards, board_cards, data)
@@ -424,6 +509,7 @@ def evaluate(data):
         evaluate_turn(hole_cards, board_cards, data)
     elif data["game"]["roundName"] == "River":
         evaluate_river(hole_cards, board_cards, data)
+
 
 def react(event, data):
     """
@@ -450,7 +536,7 @@ def react(event, data):
     # Broadcast opponent's action or BB/BS's amount 
     elif event == "__show_action":
         if data["action"]["playerName"] == my_md5:
-            if "amount" in data["action"]: # if true, it means BB or SB amount
+            if "amount" in data["action"]:  # if true, it means BB or SB amount
                 my_bet += data["action"]["amount"]
 
         pot = data["table"]["totalBet"]
@@ -476,13 +562,13 @@ def react(event, data):
         print "==== Player count in %s ==== %d" % (data["table"]["roundName"], player_count[data["table"]["roundName"]])
     # Reload chip for bot
     elif event == "__start_reload":
-        ws.send(json.dumps({"eventName" : "__reload"}))
+        ws.send(json.dumps({"eventName": "__reload"}))
     # Sent all players' statuses after a round is completed, including private cards and the winning money  
     elif event == "__round_end":
         for player in data["players"]:
             if player["playerName"] == my_md5:
                 if player["winMoney"] > 0:
-                    print "==== Round end : Win money!! ==== %d" % ( player["winMoney"])
+                    print "==== Round end : Win money!! ==== %d" % (player["winMoney"])
                 else:
                     print "==== Round end : Cheer up! ==== Loss bet : %d" % (my_bet)
     # Reset my accumulating bet, pot, player count in every stage, and every actions count
@@ -494,24 +580,24 @@ def react(event, data):
         raise_count = dict()
         bet_count = dict()
         player_count = {
-            "Deal" : 0,
-            "Flop" : 0,
-            "Turn" : 0,
-            "River" : 0
-        } 
+            "Deal": 0,
+            "Flop": 0,
+            "Turn": 0,
+            "River": 0
+        }
     elif event == "__bet":
         request_bet_action = 1
         request_minbet = data["self"]["minBet"]
-        print "= Round %s request for __bet =" % (data["game"]["roundName"]) 
-        evaluate(data)        
-        if not action_taken :
+        print "= Round %s request for __bet =" % (data["game"]["roundName"])
+        evaluate(data)
+        if not action_taken:
             take_action("bet", 10)
-        request_bet_action = 0  
+        request_bet_action = 0
         request_minbet = 0
     elif event == "__action":
-        print "= Round %s request for any __action =" % (data["game"]["roundName"]) 
+        print "= Round %s request for any __action =" % (data["game"]["roundName"])
         evaluate(data)
-        if not action_taken :
+        if not action_taken:
             take_action("check")
     elif event == "__game_over":
         max_chips = 0
@@ -534,8 +620,8 @@ def react(event, data):
 def doListen():
     try:
         global ws
-        #ws = create_connection("ws://poker-battle.vtr.trendnet.org:3001")
-        #ws = create_connection("ws://poker-training.vtr.trendnet.org:3001/")
+        # ws = create_connection("ws://poker-battle.vtr.trendnet.org:3001")
+        # ws = create_connection("ws://poker-training.vtr.trendnet.org:3001/")
         ws = create_connection("ws://poker-dev.wrs.club:3001/")
         ws.send(json.dumps({
             "eventName": "__join",
@@ -548,8 +634,8 @@ def doListen():
             msg = json.loads(result)
             event_name = msg["eventName"]
             data = msg["data"]
-            #print event_name
-            #print data
+            # print event_name
+            # print data
             react(event_name, data)
     except Exception, e:
         print e.message
@@ -583,50 +669,51 @@ def getCard(card):
     else:
         card_num = int(cardnume_code)
 
-    return Card(card_num,card_num_type)
+    return Card(card_num, card_num_type)
 
-def _pick_unused_card(card_num, used_card):    
+
+def _pick_unused_card(card_num, used_card):
     used = [getCardID(card) for card in used_card]
     unused = [card_id for card_id in range(1, 53) if card_id not in used]
     choiced = random.sample(unused, card_num)
     return [genCardFromId(card_id) for card_id in choiced]
 
+
 def getCardID(card):
-    rank=card.rank
-    suit=card.suit
-    suit=suit-1
-    id=(suit*13)+rank
+    rank = card.rank
+    suit = card.suit
+    suit = suit - 1
+    id = (suit * 13) + rank
     return id
 
+
 def genCardFromId(cardID):
-    if int(cardID)>13:
-        rank=int(cardID)%13
-        if rank==0:
-            suit=int((int(cardID)-rank)/13)
+    if int(cardID) > 13:
+        rank = int(cardID) % 13
+        if rank == 0:
+            suit = int((int(cardID) - rank) / 13)
         else:
             suit = int((int(cardID) - rank) / 13) + 1
 
-        if(rank==0):
-            rank=14
-        else:
-            rank+=1
-        return Card(rank,suit)
-    else:
-        suit=1
-        rank=int(cardID)
         if (rank == 0):
             rank = 14
         else:
-            rank+=1
-        return Card(rank,suit)
-   
+            rank += 1
+        return Card(rank, suit)
+    else:
+        suit = 1
+        rank = int(cardID)
+        if (rank == 0):
+            rank = 14
+        else:
+            rank += 1
+        return Card(rank, suit)
+
 
 if __name__ == '__main__':
-
-    #my_id = "8bb18ba770344e41b21da493ba9528bd"
-    #my_id="humanintelli"
-    my_id="trytrysee"
+    # my_id = "8bb18ba770344e41b21da493ba9528bd"
+    # my_id="humanintelli"
+    my_id = "trytrysee"
     my_md5 = hashlib.md5(my_id).hexdigest()
     print my_md5
     doListen()
-
