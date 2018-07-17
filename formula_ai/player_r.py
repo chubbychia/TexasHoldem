@@ -186,7 +186,7 @@ def calc_win_prob_by_sampling_min(sim_num,hole_cards, board_cards, data):
     win, succeeded_sample = transform_sampling(sim_num, hole_cards, board_cards, data, 'false') 
     print "==== sampling result ==== win : %d, total : %d" % (win, succeeded_sample)
     win_one_prob = win/float(succeeded_sample)
-    print "==== Win Min probability ==== " + str(win_one_prob)
+    print "==== Win strongest probability ==== " + str(win_one_prob)
     return win_one_prob
 
 def transform_sampling(sim_num,hole_cards, board_cards, data, is_max):
@@ -271,7 +271,7 @@ def calc_win_prob_by_sampling_max(sim_num,hole_cards, board_cards, data):
     print "==== Sampling result ==== win : %d, total : %d" % (win, succeeded_sample)
     win_one_prob = win/float(succeeded_sample)
     #win_all_prob = win_one_prob ** virtual_player_count(data)
-    print "==== Win max probability ==== " + str(win_one_prob)
+    print "==== Win weakest probability ==== " + str(win_one_prob)
     return win_one_prob
 
 def calc_win_prob(hole_cards, board_cards, data):
@@ -295,22 +295,22 @@ def evaluate_river(hole_cards, board_cards, data):
     Decide action in river stage
     """
     #win_all_prob = calc_win_prob(hole_cards, board_cards, data)
-    win_all_prob = calc_win_prob_by_sampling_max(10000,hole_cards, board_cards, data)
+    win_all_prob = calc_win_prob_by_sampling_min(10000,hole_cards, board_cards, data)
     ev = expected_value(win_all_prob, data["self"]["minBet"])
 
     if ev < -500:
         print "==== Fold because of EV too small: %d, win_prob : %f" % (ev, win_all_prob)
         take_action("fold")
-    elif win_all_prob >= 0.85:
+    elif win_all_prob >= 0.9:
         take_action("allin")
     elif win_all_prob >= 0.8:
         amount = max(ev, 0.5 * data["self"]["chips"] + data["self"]["minBet"])
         take_action("bet", amount)
     elif win_all_prob >= 0.7:
-        amount = max(ev, 0.4 * data["self"]["chips"] + data["self"]["minBet"])
+        amount = min(ev, 0.3 * data["self"]["chips"] + data["self"]["minBet"])
         take_action("bet", amount)
     elif win_all_prob >= 0.5:
-        amount = min(ev, 0.3 * data["self"]["chips"] + data["self"]["minBet"])
+        amount = min(ev, 0.2 * data["self"]["chips"] + data["self"]["minBet"])
         take_action("bet", amount)    
     elif win_all_prob >= 0.4:
         take_action("call")
@@ -322,14 +322,14 @@ def evaluate_turn(hole_cards, board_cards, data):
     Decide action in turn stage
     """
     #win_all_prob = calc_win_prob(hole_cards, board_cards, data)
-    win_all_prob = calc_win_prob_by_sampling_max(10000,hole_cards, board_cards, data)
+    win_all_prob = calc_win_prob_by_sampling_min(10000,hole_cards, board_cards, data)
     ev = expected_value(win_all_prob, data["self"]["minBet"])
 
     if ev < -500:
         print "==== Fold because of EV too small: %d, win_prob : %f" % (ev, win_all_prob)
         take_action("fold")
     elif win_all_prob >= 0.8:
-        amount = 0.2 * data["self"]["chips"] + data["self"]["minBet"]
+        amount = 0.1 * data["self"]["chips"] + data["self"]["minBet"]
         take_action("bet", amount)
     elif win_all_prob >= 0.6:
         amount = min(ev, 0.2 * data["self"]["chips"] + data["self"]["minBet"])
@@ -344,7 +344,8 @@ def evaluate_flop(hole_cards, board_cards, data):
     """
     Decide action in flop stage
     """
-    win_all_prob = calc_win_prob_by_sampling_max(10000,hole_cards, board_cards, data)
+    # Probability of winning the strongest(min) opponent
+    win_all_prob = calc_win_prob_by_sampling_min(10000,hole_cards, board_cards, data)
     ev = expected_value(win_all_prob, data["self"]["minBet"])
 
     if ev < -500:
@@ -409,9 +410,10 @@ def evaluate(data):
 
     hole_cards  = [convert_card_format(c) for c in data["self"]["cards"]] # ['7C', '5D'] -> ['7c', '5d']
     board_cards = [convert_card_format(c) for c in data["game"]["board"]] # []
-    print "==== my cards ==== " + str(hole_cards)  #['7c', '5d']
-    print "==== board ==== " + str(board_cards)
+    print "==== My cards ==== " + str(hole_cards)  #['7c', '5d']
+    print "==== Board ==== " + str(board_cards)
     print "==== Current pot ==== %d" % (pot)
+    print "==== My chips ==== %s" % data["self"]["chips"]
 
     # Action strategy for each stage
     if data["game"]["roundName"] == "Deal": #Preflop
@@ -533,8 +535,8 @@ def doListen():
     try:
         global ws
         #ws = create_connection("ws://poker-battle.vtr.trendnet.org:3001")
-        ws = create_connection("ws://poker-training.vtr.trendnet.org:3001/")
-        #ws = create_connection("ws://poker-dev.wrs.club:3001/")
+        #ws = create_connection("ws://poker-training.vtr.trendnet.org:3001/")
+        ws = create_connection("ws://poker-dev.wrs.club:3001/")
         ws.send(json.dumps({
             "eventName": "__join",
             "data": {
@@ -622,7 +624,8 @@ def genCardFromId(cardID):
 if __name__ == '__main__':
 
     #my_id = "8bb18ba770344e41b21da493ba9528bd"
-    my_id="humanintelli"
+    #my_id="humanintelli"
+    my_id="trytrysee"
     my_md5 = hashlib.md5(my_id).hexdigest()
     print my_md5
     doListen()
