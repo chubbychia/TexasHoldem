@@ -20,6 +20,8 @@ pot = 0
 my_bet = 0
 action_taken = False
 my_round_action = dict()
+request_bet_action = 0
+request_minbet = 0
 allin_count = dict()
 raise_count = dict()
 bet_count = dict()
@@ -52,6 +54,15 @@ def take_action(action="check", amount=0):
     """
     global action_taken
     global my_round_action
+    global request_bet_action
+    global request_minbet
+
+    if (request_bet_action == 1) \
+        and action in ["check","call","raise","allin"]:
+            action = "bet"
+            if (int(amount) == 0):
+                amount = request_minbet
+
 
     if ("bet" in my_round_action or "raise" in my_round_action) \
         and action in ["bet", "raise"]:
@@ -65,7 +76,7 @@ def take_action(action="check", amount=0):
     message["data"]["action"] = action
     message["data"]["amount"] = int(amount)
     ws.send(json.dumps(message))
-    print "==== Take Action ==== : %s" % (json.dumps(message))    
+    print "==== Take Action ==== : %s " % (json.dumps(message))    
     action_taken = True
 
 def expected_value(win_prob, min_bet):
@@ -420,6 +431,8 @@ def react(event, data):
     global raise_count
     global allin_count
     global my_round_action
+    global request_bet_action
+    global request_minbet
     global player_count
     global my_bet
     global pot
@@ -483,14 +496,16 @@ def react(event, data):
             "Flop" : 0,
             "Turn" : 0,
             "River" : 0
-        }
-    # In bet, calculate winning prob    
+        } 
     elif event == "__bet":
+        request_bet_action = 1
+        request_minbet = data["self"]["minBet"]
         print "= Round %s request for __bet =" % (data["game"]["roundName"]) 
         evaluate(data)        
         if not action_taken :
             take_action("bet", 10)
-     # In action, calculate winning prob    
+        request_bet_action = 0  
+        request_minbet = 0
     elif event == "__action":
         print "= Round %s request for any __action =" % (data["game"]["roundName"]) 
         evaluate(data)
@@ -517,8 +532,8 @@ def react(event, data):
 def doListen():
     try:
         global ws
-        ws = create_connection("ws://poker-battle.vtr.trendnet.org:3001")
-        #ws = create_connection("ws://poker-training.vtr.trendnet.org:3001/")
+        #ws = create_connection("ws://poker-battle.vtr.trendnet.org:3001")
+        ws = create_connection("ws://poker-training.vtr.trendnet.org:3001/")
         #ws = create_connection("ws://poker-dev.wrs.club:3001/")
         ws.send(json.dumps({
             "eventName": "__join",
@@ -606,7 +621,8 @@ def genCardFromId(cardID):
 
 if __name__ == '__main__':
 
-    my_id = "8bb18ba770344e41b21da493ba9528bd"
+    #my_id = "8bb18ba770344e41b21da493ba9528bd"
+    my_id="humanintelli"
     my_md5 = hashlib.md5(my_id).hexdigest()
     print my_md5
     doListen()
