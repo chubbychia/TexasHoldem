@@ -92,9 +92,9 @@ def run():
         14: "A"
     }
 
-    hole_cards = ['7s','Ac']
-    #board_cards = ['7c','As','8h']
-    board_cards = []
+    hole_cards = ['4s','Qh']
+    board_cards = ['Jc','6c','9h']
+    #board_cards = []
     
     eval_hand = [getCard(card) for card in (hole_cards)]
     print eval_hand.__repr__()
@@ -104,10 +104,10 @@ def run():
     
     evaluator = deuces.Evaluator()
     
-    sim_num = 1
+    sim_num = 15000
     win = 0
     succeeded_sample = 0
-    num_players = 5
+    num_players = 6
     
     for i in range(sim_num):
         board_cards_to_draw = 5 - len(eval_board)
@@ -122,7 +122,7 @@ def run():
             s_hand = str(RANK_TO_STRING[evalcard.rank])+str(SUIT_TO_STRING[evalcard.suit])
             d_board_card = deuces.Card.new(s_hand)
             d_board_sample.append(d_board_card)
-            print ("Community : "+s_hand)
+            #print ("Community : "+s_hand)
 
         for evalcardset in e_opponents_hole:
             d_oppo_set = []
@@ -130,17 +130,17 @@ def run():
                 s_hand = str(RANK_TO_STRING[e_card.rank])+str(SUIT_TO_STRING[e_card.suit])
                 d_oppo_card = deuces.Card.new(s_hand)
                 d_oppo_set.append(d_oppo_card)
-                print ("Opponents hands : "+s_hand)
+                #print ("Opponents hands : "+s_hand)
             d_oppo_sample.append(d_oppo_set)           
             
 
         try:
             my_rank = pow(evaluator.evaluate(d_hands, d_board_sample), num_players)
             rival_rank = [pow(evaluator.evaluate(opp_hole, d_board_sample), num_players) for opp_hole in d_oppo_sample]
-            print str(my_rank) +" versus "+str(rival_rank)
+            #print str(my_rank) +" versus "+str(rival_rank)
         except:
             continue
-        if my_rank >= max(rival_rank):
+        if my_rank <= min(rival_rank):
             win += 1
         succeeded_sample += 1
     print "==== Sampling result ==== win : %d, total : %d" % (win, succeeded_sample)
