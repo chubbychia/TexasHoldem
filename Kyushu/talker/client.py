@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding:utf-8 -*-
 
-#pylint: disable=all
+# pylint: disable=all
 
 
 import json
@@ -14,19 +14,22 @@ from action import *
 from pokereval.hand_evaluator import get_score
 from websocket import create_connection
 from holdem.card import Card
-import event as EVNETNAME
+import event as EVENTNAME
 import hashlib
 
 #ws = create_connection("ws://poker-battle.vtr.trendnet.org:3001")
 ws = create_connection("ws://poker-training.vtr.trendnet.org:3001")
-#ws = create_connection("ws://poker-dev.wrs.club:3001")
+# ws = create_connection("ws://poker-dev.wrs.club:3001")
 RETRY = 3
+
 
 class GameOverException(Exception):
     pass
 
+
 class PokerClient(object):
-    #CLIENT_NAME = "35b50b7d6d6a41c7a51625d76cc5abc2"
+    # CLIENT_NAME = "35b50b7d6d6a41c7a51625d76cc5abc2"
+
     CLIENT_NAME = "jojotrain"
     def __init__(self):
         self._name_hash = None
@@ -58,6 +61,8 @@ class PokerClient(object):
         self.game_count = 0
         self.game_chips = 0
 
+        self.trainingMode = False
+
     def new_game(self):
         self.minBet = 0
         self.totalBet = 0
@@ -78,7 +83,7 @@ class PokerClient(object):
     def name_hash(self):
         if not self._name_hash:
             m = hashlib.md5()
-            m.update(self.CLIENT_NAME)
+            m.update(self.CLIENT_NAME.encode('utf-8'))
             self._name_hash = m.hexdigest()
         return self._name_hash
 
@@ -90,6 +95,7 @@ class PokerClient(object):
     @property
     def cards(self):
         return self._cards
+
     @cards.setter
     def cards(self, value):
         self._cards = [card[:1] + card[1:].lower() for card in value]
@@ -97,6 +103,7 @@ class PokerClient(object):
     @property
     def board(self):
         return self._board
+
     @board.setter
     def board(self, value):
         self._board = [card[:1] + card[1:].lower() for card in value]
@@ -112,6 +119,7 @@ class PokerClient(object):
         elif self._roundSeq == "River":
             return Round.RIVER
         return 0
+
     @roundSeq.setter
     def roundSeq(self, value):
         self._roundSeq = value
@@ -150,7 +158,7 @@ class PokerClient(object):
     def my_card_ranking(self):
         if not all([self.cards, self.board]):
             print "Cards: board:%s, mine:%s" % (self.board, self.cards)
-            return -1 # worst
+            return -1  # worst
 
         cprint("My cards: %s, %s" % (self.board, self.cards), "cyan")
         return Card.get_card_suite(self.board, self.cards)
@@ -191,12 +199,12 @@ class PokerClient(object):
                 ws.send(json.dumps(payload))
                 return True
             except BaseException as err:
-                print "send event error: %s", err
+                print "send event error: {} try times: {}".format(err, retry)
+                retry += 1
                 if retry < RETRY:
                     continue
                 else:
                     return False
-            retry += 1
 
     def search(self, players):
         for p in players:
@@ -205,10 +213,10 @@ class PokerClient(object):
 
     def join(self):
         print "%s tries to join.." % self.CLIENT_NAME
-        return self._send_event(EVNETNAME.JOIN, {"playerName": self.CLIENT_NAME})
+        return self._send_event(EVENTNAME.JOIN, {"playerName": self.CLIENT_NAME})
 
     def reload(self):
-        return self._send_event(EVNETNAME.RELOAD)
+        return self._send_event(EVENTNAME.RELOAD)
 
     def reset(self):
         pass
@@ -222,35 +230,49 @@ class PokerClient(object):
         # print "New Round: {}".format(data)
         self.new_game()
 
-        p = self.search(data["players"])
-        self.cards = p.get("cards", [])
-        self.chips = p["chips"]
+        if not self.trainingMode:
+            p = self.search(data["players"])
+            self.cards = p.get("cards", [])
+            self.chips = p["chips"]
+            t = data["table"]
+            self._small_blind = t["smallBlind"]
+            self._big_blind = t["bigBlind"]
+            cprint("Start a new round(%s) in Table(%s)" % (t["roundCount"], t["tableNumber"]), "yellow")
+        else:
+            self.cards = []
+            self.chips = 0
 
-        t = data["table"]
-        self._small_blind = t["smallBlind"]
-        self._big_blind = t["bigBlind"]
         self.reset()
-        cprint("Start a new round(%s) in Table(%s)" % (t["roundCount"], t["tableNumber"]), "yellow")
 
     def _act_end_round(self, action, data):
         print "Game Stat: {}".format(action)
-        p = self.search(data["players"])
-        if p["winMoney"]:
-            cprint("win the money:%s, my chips:%s" % (p["winMoney"], p["chips"]), 'magenta')
+        if not self.trainingMode:
+            p = self.search(data["players"])
+            if p["winMoney"]:
+                cprint("win the money:%s, my chips:%s" % (p["winMoney"], p["chips"]), 'magenta')
+            else:
+                cprint("lost the money:%s, my chips:%s" % (sum(self.myBet), p["chips"]), 'red')
         else:
-            cprint("lost the money:%s, my chips:%s" % (sum(self.myBet), p["chips"]) , 'red')
+            cprint("round end", 'white')
 
     def _act_game_over(self, action, data):
         print "Game Stat: {}".format(action)
-        p = self.search(data["players"])
 
-        self.game_count += 1
-        self.game_chips += p["chips"]
+        if not self.trainingMode:
+            p = self.search(data["players"])
 
-        if p["chips"]:
-            cprint("I am the winner:%s, played %s games, AVG: %s" % (p["chips"], self.game_count, self.game_chips / self.game_count), 'cyan')
+            self.game_count += 1
+            self.game_chips += p["chips"]
+
+            if p["chips"]:
+                cprint("I am the winner:%s, played %s games, AVG: %s" % (
+                    p["chips"], self.game_count, self.game_chips / self.game_count), 'cyan')
+            else:
+                cprint(
+                    "I am the loser, played %s games, AVG: %s" % (self.game_count, self.game_chips / self.game_count),
+                    'red')
         else:
-            cprint("I am the loser, played %s games, AVG: %s" % (self.game_count, self.game_chips / self.game_count), 'red')
+            cprint("game over", 'white')
 
         raise GameOverException("Game over!")
 
@@ -268,33 +290,34 @@ class PokerClient(object):
 
     def _act_action(self, do_act, bet_times=1):
 
-        a = { "action": 'fold', "amount": self.minBet}
+        a = {"action": 'fold', "amount": self.minBet}
 
-        bet_mound = max(self._big_blind.get("amount", 0) * bet_times, 120 * bet_times, self.minBet) if self._big_blind else self.minBet
+        bet_mound = max(self._big_blind.get("amount", 0) * bet_times, 120 * bet_times,
+                        self.minBet) if self._big_blind else self.minBet
 
-        if do_act == RAISE and self.big_blind_amount and self.minBet / big_blind_amount > 10:
+        if do_act == RAISE and self.big_blind_amount and self.minBet / self.big_blind_amount > 10:
             cprint("The minBet(%s) is too much to raise, use CALL instead" % self.minBet, "yellow")
             do_act = CALL
 
         if do_act == FOLD:
-            a = { "action": 'fold', "amount": bet_mound}
+            a = {"action": 'fold', "amount": bet_mound}
         elif do_act == CHECK:
-            a = { "action": 'check', "amount": bet_mound}
+            a = {"action": 'check', "amount": bet_mound}
         elif do_act == BET:
-            a = { "action": 'bet', "amount": bet_mound}
+            a = {"action": 'bet', "amount": bet_mound}
         elif do_act == RAISE:
-            a = { "action": 'raise', "amount": bet_mound}
+            a = {"action": 'raise', "amount": bet_mound}
         elif do_act == CALL:
-            a = { "action": 'call', "amount": bet_mound}
+            a = {"action": 'call', "amount": bet_mound}
         else:
-            a = { "action": 'allin', "amount": bet_mound}
+            a = {"action": 'allin', "amount": bet_mound}
 
         cprint("Action: %s" % ACT_STR[do_act], "cyan")
 
         if do_act in (CHECK, BET, RAISE, CALL, ALL_IN):
             self.iscall[self.roundSeq] += 1
 
-        return self._send_event(EVNETNAME.ACTION, a)
+        return self._send_event(EVENTNAME.ACTION, a)
 
     def _act_show_action(self, action, data):
         t = data["table"]
@@ -304,28 +327,30 @@ class PokerClient(object):
 
         self._record_player_action(player_action)
 
-        p = self.search(data["players"])
-
         if self.roundSeq in Round.ALL:
             self.raiseCount[self.roundSeq] = t["raiseCount"]
             self.betCount[self.roundSeq] = t["betCount"]
-            self.myBet[self.roundSeq] = p["bet"]
+            if not self.trainingMode:
+                self.myBet[self.roundSeq] = self.search(data["players"])["bet"]
+            else:
+                self.board = t["board"]
             if player_action["action"] in ('allin', 'bet', 'call', 'raise'):
-                cprint("%s %s: %s" % (player_action["playerName"], player_action["action"], player_action["amount"]), 'yellow')
+                cprint("%s %s: %s" % (player_action["playerName"], player_action["action"], player_action["amount"]),
+                       'yellow')
                 self._needBet[self.roundSeq] = True
 
-        print "==Game update== {0} round({5}): player({7}) do {8}, raiseCount({1}), betCount({2}), totalBet({3}), myBet({4}), ranking({6})".format(
-                        name,
-                        self.raiseCount,
-                        self.betCount,
-                        self.totalBet,
-                        self.myBet,
-                        self.roundSeq,
-                        self.cardRanking,
-                        player_action["playerName"],
-                        player_action["action"]
-                    )
-
+        print "==Game update== {0} round({5}): player({7}) do {8}, raiseCount({1}), betCount({2}), " \
+              "totalBet({3}), myBet({4}), ranking({6})".format(
+                name,
+                self.raiseCount,
+                self.betCount,
+                self.totalBet,
+                self.myBet,
+                self.roundSeq,
+                self.cardRanking,
+                player_action["playerName"],
+                player_action["action"]
+        )
 
     def _record_player_action(self, player_action):
         # "action" : {
@@ -349,15 +374,15 @@ class PokerClient(object):
             self.thisRoundUserBehavior_for_predict.pop(player_action["playerName"], None)
             features[self.roundSeq] = 1
         elif player_action["action"] == 'call':
-            features[5*self.roundSeq + 5] += 1
+            features[5 * self.roundSeq + 5] += 1
         elif player_action["action"] == 'bet':
-            features[5*self.roundSeq + 6] += 1
+            features[5 * self.roundSeq + 6] += 1
         elif player_action["action"] == 'raise':
-            features[5*self.roundSeq + 7] += 1
+            features[5 * self.roundSeq + 7] += 1
         elif player_action["action"] == 'bet' and player_action["amount"]:
-            features[5*self.roundSeq + 8] += player_action["amount"] / self.minBet
+            features[5 * self.roundSeq + 8] += player_action["amount"] / self.minBet
         elif player_action["action"] == 'allin':
-            features[5*self.roundSeq + 9] += 1
+            features[5 * self.roundSeq + 9] += 1
 
         self.thisRoundUserBehavior[player_action["playerName"]] = features
 
@@ -381,7 +406,7 @@ class PokerClient(object):
 
             for seq, score in enumerate(user_score):
                 # masking the features per round
-                features = features[:seq*5+10]
+                features = features[:seq * 5 + 10]
                 features += [0] * (26 - len(features))
                 features[25] = score
                 round_train_data[player["playerName"]].append(features)
@@ -404,16 +429,16 @@ class PokerClient(object):
 
     def takeAction(self, action, data):
         try:
-            if action == EVNETNAME.NEW_PEER:
+            if action == EVENTNAME.NEW_PEER:
                 self._act_new_peer(action, data)
 
-            elif action in EVNETNAME.NEW_ROUNT:
+            elif action in EVENTNAME.NEW_ROUND:
                 self._act_new_round(action, data)
 
-            elif action == EVNETNAME.DEAL:
+            elif action == EVENTNAME.DEAL:
                 self._act_deal(action, data)
 
-            elif action in (EVNETNAME.ACTION, EVNETNAME.BET):
+            elif action in (EVENTNAME.ACTION, EVENTNAME.BET):
                 self.minBet = data['self']['minBet']
 
                 # reconnection the cards is empty
@@ -423,23 +448,24 @@ class PokerClient(object):
                 action = self.predict(data)
 
                 if isinstance(action, tuple):
-                    return self._act_action(action[0],  action[1])
+                    return self._act_action(action[0], action[1])
 
                 return self._act_action(action)
 
-            elif action == EVNETNAME.START_RELOAD:
-                p = self.search(data["players"])
-                if p["chips"] == 0:
-                    self.reload()
+            elif action == EVENTNAME.START_RELOAD:
+                if not self.trainingMode:
+                    p = self.search(data["players"])
+                    if p["chips"] == 0:
+                        self.reload()
 
-            elif action == EVNETNAME.SHOW_ACTION:
+            elif action == EVENTNAME.SHOW_ACTION:
                 # print "Game Stat: {}".format(action)
                 self._act_show_action(action, data)
 
-            elif action == EVNETNAME.ROUND_END:
+            elif action == EVENTNAME.ROUND_END:
                 self._act_end_round(action, data)
 
-            elif action == EVNETNAME.GAME_OVER:
+            elif action == EVENTNAME.GAME_OVER:
                 self._act_game_over(action, data)
 
             else:
@@ -451,11 +477,11 @@ class PokerClient(object):
         except BaseException as err:
             print "action error: %s, %s" % (err, traceback.print_exc())
             pprint.pprint(
-                        {
-                            "event": action,
-                            "data":data,
-                        }
-                    )
+                {
+                    "event": action,
+                    "data": data,
+                }
+            )
 
     def doListen(self):
 
@@ -488,10 +514,10 @@ class PokerClient(object):
 
         except Exception as e:
             print e
-            time.sleep(2)
+            time.sleep(5)
             self.doListen()
 
 
 if __name__ == '__main__':
-    pc = PokerClient()
+    pc = PokerClient('server.log')
     pc.doListen()

@@ -3,7 +3,7 @@ JOIN = "__join"
 
 DEAL = "__deal"
 ROUND_END = "__round_end"
-NEW_ROUNT = "__new_round"
+NEW_ROUND = "__new_round"
 
 BET = "__bet"
 ACTION = "__action"

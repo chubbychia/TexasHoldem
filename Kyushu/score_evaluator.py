@@ -3,7 +3,8 @@ import numpy as np
 from collections import defaultdict
 from keras.models import Sequential
 from keras.models import load_model
-from keras.layers import Dense
+from keras.layers import Dense, Dropout, Activation
+from keras.optimizers import RMSprop
 
 current_folder = os.path.dirname(os.path.abspath(__file__))
 # HDF5 file, you have to pip3 install h5py if don't have it
@@ -24,11 +25,14 @@ class Player(object):
                 self.is_known_guy = True
             else:
                 model = Sequential()
-                model.add(Dense(units=50, input_dim=25))
-                model.add(Dense(units=1,))
-                model.compile(loss='mse', optimizer='sgd')
+                model.add(Dense(units=50, activation='relu', input_dim=25)) # first layer = 25 dim; Hidden layer = 50 dim
+                model.add(Dense(units=1, activation='softmax')) # output layer = 1
+                opt = RMSprop(lr=0.0001, decay=1e-6)
+                model.compile(loss='binary_crossentropy', optimizer=opt)
 
             Player.PLAYER_MODEL[player_name] = model
+        else:
+            self.is_known_guy = True
 
     @property
     def model(self):
