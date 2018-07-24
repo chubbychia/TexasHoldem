@@ -11,14 +11,14 @@ import time
 from collections import defaultdict
 from termcolor import cprint
 from action import *
-from pokereval.hand_evaluator import get_score
+from pokereval.hand_evaluator import get_score, get_rank, evaluate_stage_winrate
 from websocket import create_connection
 from holdem.card import Card
 import event as EVENTNAME
 import hashlib
 
-ws = create_connection("ws://poker-battle.vtr.trendnet.org:3001")
-#ws = create_connection("ws://poker-training.vtr.trendnet.org:3001")
+#ws = create_connection("ws://poker-battle.vtr.trendnet.org:3001")
+ws = create_connection("ws://poker-training.vtr.trendnet.org:3001")
 #ws = create_connection("ws://poker-dev.wrs.club:3001")
 RETRY = 3
 
@@ -28,9 +28,9 @@ class GameOverException(Exception):
 
 
 class PokerClient(object):
-    CLIENT_NAME = "35b50b7d6d6a41c7a51625d76cc5abc2"
+    #CLIENT_NAME = "35b50b7d6d6a41c7a51625d76cc5abc2"
 
-    #CLIENT_NAME = "jojotrain"
+    CLIENT_NAME = "jojotrain"
     def __init__(self):
         self._name_hash = None
         self._chips = 0
@@ -396,13 +396,22 @@ class PokerClient(object):
             return
 
         round_train_data = defaultdict(list)
-
+       
+        # use real card rank to train
+        user_rank = defaultdict(list)
+        for player in players:
+            h_cards = player["cards"]
+            user_rank[player["playerName"]].append([get_rank(h_cards, self.board[:c]) for c in (0, 3, 4, 5)])
+        
         for player in players:
             features = self.thisRoundUserBehavior.get(player["playerName"], None)
             if not features:
-                continue
-            h_cards = player["cards"]
-            user_score = [get_score(h_cards, self.board[:c]) for c in (0, 3, 4, 5)]
+                continue            
+           
+            others_rank = [value for key, value in user_rank.iteritems() if key !=player["playerName"]]
+            user_score = evaluate_stage_winrate(user_rank[player["playerName"]], others_rank)
+            #h_cards = player["cards"]
+            #user_score = [get_score(h_cards, self.board[:c]) for c in (0, 3, 4, 5)]
 
             for seq, score in enumerate(user_score):
                 # masking the features per round
@@ -411,7 +420,7 @@ class PokerClient(object):
                 features[25] = score
                 round_train_data[player["playerName"]].append(features)
 
-                # the user is fold
+                # the user is fold, stop training the following round
                 if features[seq] == 1:
                     break
 

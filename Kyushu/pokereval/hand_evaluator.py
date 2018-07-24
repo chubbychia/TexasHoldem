@@ -370,6 +370,54 @@ class HandEvaluator:
 
     evaluate_hand = staticmethod(evaluate_hand)
 
+    def evaluate_handboard_rank(hand, board=[]):
+        """
+        Return the rank of the assigned cards
+        """
+        hand_lengths = [2]
+
+        if len(hand) not in hand_lengths:
+           #raise HandLengthException("Only %s hole cards are supported" % ", ".join(map(str, hand_lengths)))
+            return 9999
+
+        cards = list(hand) + list(board)
+        if len(cards) == 2:
+            return HandEvaluator.Two.evaluate_percentile(hand)
+        elif len(cards) == 5:
+            evaluator = HandEvaluator.Five
+        elif len(cards) == 6:
+            evaluator = HandEvaluator.Six
+        elif len(cards) == 7:
+            evaluator = HandEvaluator.Seven
+        else:
+            # wrong number of cards
+            raise HandLengthException("Only 2, 5, 6, 7 cards total are supported by evaluate_hand")
+
+        # Default values in case we screw up
+        rank = 7463
+        rank = evaluator.evaluate_rank(cards)
+        return rank
+
+    evaluate_handboard_rank = staticmethod(evaluate_handboard_rank)
+
+# oppenents example : [[6453, 1453, 1225, 1002], [9324, 4632, 2345, 5643]]
+# me example: [3245,6435,1345,6543]
+def evaluate_stage_winrate(me, opponents):
+    opp_count = len(list(opponents))
+    rounds = len(me)
+    stage_score = []
+    # Rank comparison in preflop, flop, turn,river
+    for stg in range(rounds):
+        me_win = 0
+        for opp_index in range(opp_count): 
+            if me[stg] < opponents[opp_index][stg]:
+                # you beat this opponent
+                me_win += 1
+            elif me[stg] == opponents[opp_index][stg]:
+                me_win += 0.5           
+        stage_score.insert(stg, float(me_win) / opp_count)
+    
+    return stage_score
 
 CARD_MAPPING = {
     "A": 14,
@@ -438,6 +486,12 @@ def get_score(hand, board):
     hand = [Card(CARD_MAPPING[h_card[:1]], SUIT_MAPPING[h_card[1:].lower()]) for h_card in hand]
     board = [Card(CARD_MAPPING[b_card[:1]], SUIT_MAPPING[b_card[1:].lower()]) for b_card in board]
     return HandEvaluator.evaluate_hand(hand, board)
+
+def get_rank(hand, board):
+    from card import Card
+    hand = [Card(CARD_MAPPING[h_card[:1]], SUIT_MAPPING[h_card[1:].lower()]) for h_card in hand]
+    board = [Card(CARD_MAPPING[b_card[:1]], SUIT_MAPPING[b_card[1:].lower()]) for b_card in board]
+    return HandEvaluator.evaluate_handboard_rank(hand, board)
 
 if __name__ == '__main__':
     hole = ["3s", "4s"]
