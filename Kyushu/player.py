@@ -18,10 +18,10 @@ from score_evaluator import Player
 
 DUMMY_PLAYER = 'XXXX'
 class RefereePlayer(PokerClient):
-    #CLIENT_NAME = os.environ.get("TABLE", "") + "35b50b7d6d6a41c7a51625d76cc5abc2"
+    CLIENT_NAME = os.environ.get("TABLE", "") + "35b50b7d6d6a41c7a51625d76cc5abc2"
     #CLIENT_NAME = u"新店小栗旬"
 
-    CLIENT_NAME = os.environ.get("TABLE", "") + "jojotrain"
+    #CLIENT_NAME = os.environ.get("TABLE", "") + "jojotrain"
 
     # override end round to train the user's behavior
     def _act_end_round(self, action, data):
@@ -63,19 +63,22 @@ class RefereePlayer(PokerClient):
             return FOLD
 
         elif the_pred_values:
-            if len(the_pred_values) >= 4: #5~10 players (will provide auto dummy) 
+            #if len(the_pred_values) >= 4: #5~10 players (will provide auto dummy) 
                 if data["game"]["roundName"] == "Deal":  # Preflop
                     if my_score > max(the_pred_values):
                         return (BET, 3)
                     elif my_score > min(the_pred_values):
-                        return CALL    
+                        return CALL   
+                    # never fold    
                 elif data["game"]["roundName"] == "Flop":
                     if my_score > max(the_pred_values):
                         return (BET, 3)
                     elif my_score > the_pred_values[1]:
                         return (BET, 1)
                     elif my_score > min(the_pred_values):
-                        return CALL    
+                        return CALL 
+                    else:
+                        return FOLD    
                 elif data["game"]["roundName"] == "Turn":    
                     if my_score > max(the_pred_values):
                         return (BET, 5)
@@ -83,10 +86,12 @@ class RefereePlayer(PokerClient):
                         return (BET, 3)
                     elif my_score > the_pred_values[2]:
                         return (BET, 2)
-                    elif my_score > the_pred_values[3]:
-                        return (BET, 1)
+                    #elif my_score > the_pred_values[3]:
+                        #return (BET, 1)
                     elif my_score > min(the_pred_values):
-                        return CALL    
+                        return CALL   
+                    else:
+                        return FOLD  
                 elif data["game"]["roundName"] == "River":    
                     if my_score > max(the_pred_values):
                         return (BET, 5)
@@ -94,10 +99,12 @@ class RefereePlayer(PokerClient):
                         return (BET, 3)
                     elif my_score > the_pred_values[2]:
                         return (BET, 2)
-                    elif my_score > the_pred_values[3]:
-                        return (BET, 1)
+                    #elif my_score > the_pred_values[3]:
+                        #return (BET, 1)
                     elif my_score > min(the_pred_values):
-                        return CALL            
+                        return CALL 
+                    else:
+                        return FOLD           
         return CHECK
 
     def predict(self, data=None):

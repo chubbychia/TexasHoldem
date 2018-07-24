@@ -17,9 +17,9 @@ from holdem.card import Card
 import event as EVENTNAME
 import hashlib
 
-#ws = create_connection("ws://poker-battle.vtr.trendnet.org:3001")
-ws = create_connection("ws://poker-training.vtr.trendnet.org:3001")
-# ws = create_connection("ws://poker-dev.wrs.club:3001")
+ws = create_connection("ws://poker-battle.vtr.trendnet.org:3001")
+#ws = create_connection("ws://poker-training.vtr.trendnet.org:3001")
+#ws = create_connection("ws://poker-dev.wrs.club:3001")
 RETRY = 3
 
 
@@ -28,9 +28,9 @@ class GameOverException(Exception):
 
 
 class PokerClient(object):
-    # CLIENT_NAME = "35b50b7d6d6a41c7a51625d76cc5abc2"
+    CLIENT_NAME = "35b50b7d6d6a41c7a51625d76cc5abc2"
 
-    CLIENT_NAME = "jojotrain"
+    #CLIENT_NAME = "jojotrain"
     def __init__(self):
         self._name_hash = None
         self._chips = 0
