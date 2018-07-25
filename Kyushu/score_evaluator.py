@@ -25,9 +25,9 @@ class Player(object):
                 self.is_known_guy = True
             else:
                 model = Sequential()
-                model.add(Dense(units=50, activation='relu', input_dim=25)) # first layer = 25 dim; Hidden layer = 50 dim
+                model.add(Dense(units=100, activation='relu', input_dim=25)) # first layer = 25 dim; Hidden layer = 50 dim
                 model.add(Dense(units=1, activation='softmax')) # output layer = 1
-                opt = RMSprop(lr=0.0001, decay=1e-6)
+                opt = RMSprop(lr=0.0005, decay=1e-6)
                 model.compile(loss='binary_crossentropy', optimizer=opt)
 
             Player.PLAYER_MODEL[player_name] = model

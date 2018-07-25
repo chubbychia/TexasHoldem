@@ -7,21 +7,54 @@ import time
 import traceback
 import numpy as np
 import eval7
-from termcolor import cprint
+import pickle
+import datetime
 
+from termcolor import cprint
 from talker.client import PokerClient
 from talker.action import *
 from holdem.card import Card
 from pokereval.hand_evaluator import get_score, HandEvaluator, getCardID, genCardFromId, pick_unused_card, getCard
 from score_evaluator import Player
 
-
 DUMMY_PLAYER = 'XXXX'
+current_folder = os.path.dirname(os.path.abspath(__file__))
 class RefereePlayer(PokerClient):
     #CLIENT_NAME = os.environ.get("TABLE", "") + "35b50b7d6d6a41c7a51625d76cc5abc2"
     #CLIENT_NAME = u"新店小栗旬"
 
     CLIENT_NAME = os.environ.get("TABLE", "") + "jojotrain"
+    
+    def save_append_training_data(self, behavior):        
+        now = datetime.datetime.now()
+        TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ str(now)[:10] + '.pkl')
+        directory = os.path.dirname(TRAINDATA_PATH)
+        
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        
+        if os.path.exists(directory):
+            with open(TRAINDATA_PATH,'a') as f:
+                # Pickle dictionary using protocol 0.
+                #print '*** Save %s' %behavior
+                pickle.dump(behavior, f)
+
+    def load_training_data(self, fname):
+        TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ fname + '.pkl')
+        obj = []
+        if os.path.exists(TRAINDATA_PATH):
+            with open(TRAINDATA_PATH, 'rb') as f:
+                while True:
+                    try:
+                        obj.append(pickle.load(f))
+                    except EOFError:
+                        break
+            #print obj
+        else:
+            print 'No such training file %s' % (TRAINDATA_PATH)
+
+
+
 
     # override end round to train the user's behavior
     def _act_end_round(self, action, data):
@@ -34,6 +67,7 @@ class RefereePlayer(PokerClient):
             for player_name, behavior in user_behaviors.iteritems():
                 #player = Player(player_name)
                 player = Player(DUMMY_PLAYER)
+                self.save_append_training_data(behavior)
                 player.train(behavior)
                 if player.is_bluffing_guy is not None:
                     cprint("player(%s) is a(n) %s guy" % (
