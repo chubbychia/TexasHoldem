@@ -393,7 +393,7 @@ class PokerClient(object):
         # table pot 
         features[8 * self.roundSeq + 11] = round(float(show_action["table"]["totalBet"])/1000,2)
         # survivor count
-        features[8 * self.roundSeq + 12] = round(self._get_survivor_count(show_action),2)
+        features[8 * self.roundSeq + 12] = self._get_survivor_count(show_action)
 
         self.thisRoundUserBehavior[player_action["playerName"]] = features
   

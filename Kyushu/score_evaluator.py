@@ -103,12 +103,13 @@ if __name__ == '__main__':
     x_test=[]
     y_test=[]
     for i, flat in enumerate(train_data):
-        if i < len(train_data)/3:
-            x_test.append(flat[0][:37])
-            y_test.append(flat[0][37:])
-        else:
-            x_data.append(flat[0][:37])
-            y_data.append(flat[0][37:])
+        for stg in flat:
+            if i < len(train_data)/3:
+                x_test.append(stg[:37])
+                y_test.append(stg[37:])
+            else:
+                x_data.append(stg[:37])
+                y_data.append(stg[37:])
     
     x_data = np.asarray(x_data)  
     y_data = np.asarray(y_data)  
