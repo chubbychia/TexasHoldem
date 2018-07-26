@@ -5,6 +5,7 @@ import os
 if __name__ == '__main__':
     current_folder = os.path.dirname(os.path.abspath(__file__))
     now = datetime.datetime.now()
+    #now='2018-07-25'
     TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ str(now)[:10] + '.pkl')
    
     directory = os.path.dirname(TRAINDATA_PATH)
@@ -16,7 +17,6 @@ if __name__ == '__main__':
             while True:
                 try:
                     print pickle.load(f)
-                    pickle.load(f)
                     count += 1
                 except EOFError:
                     break

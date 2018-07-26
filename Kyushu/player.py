@@ -39,23 +39,6 @@ class RefereePlayer(PokerClient):
                 #print '*** Save %s' %behavior
                 pickle.dump(behavior, f)
 
-    def load_training_data(self, fname):
-        TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ fname + '.pkl')
-        obj = []
-        if os.path.exists(TRAINDATA_PATH):
-            with open(TRAINDATA_PATH, 'rb') as f:
-                while True:
-                    try:
-                        obj.append(pickle.load(f))
-                    except EOFError:
-                        break
-            #print obj
-        else:
-            print 'No such training file %s' % (TRAINDATA_PATH)
-
-
-
-
     # override end round to train the user's behavior
     def _act_end_round(self, action, data):
 
@@ -81,7 +64,7 @@ class RefereePlayer(PokerClient):
         simulate_score = 0
         dummyplayer = Player(DUMMY_PLAYER)
         for player_name, behavior in self.thisRoundUserBehavior_for_predict.iteritems():
-            simulate_score = dummyplayer.predict(behavior[:25], self.roundSeq)
+            simulate_score = dummyplayer.predict(behavior[:37], self.roundSeq)
             if np.math.isnan(simulate_score):
                 simulate_score = self.simulation(data, 10000)
             predict_values[player_name] = simulate_score

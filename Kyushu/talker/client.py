@@ -38,6 +38,7 @@ class PokerClient(object):
         self._big_blind = None
         self._small_blind = None
 
+        self.bet = 0
         self.minBet = 0
         self.totalBet = 0
         # 0: deal, 1:flop, 2:turn, 3:river
@@ -325,7 +326,7 @@ class PokerClient(object):
         self.totalBet = t["totalBet"]
         player_action = data["action"]
 
-        self._record_player_action(player_action)
+        self._record_player_action(player_action, data)
 
         if self.roundSeq in Round.ALL:
             self.raiseCount[self.roundSeq] = t["raiseCount"]
@@ -352,7 +353,7 @@ class PokerClient(object):
                 player_action["action"]
         )
 
-    def _record_player_action(self, player_action):
+    def _record_player_action(self, player_action, show_action):
         # "action" : {
         #     "action" : "call",
         #     "playerName" : "alex(MD5 Hash)",
@@ -362,32 +363,52 @@ class PokerClient(object):
         # round features:
         #  0~3: Fold:0, 0, 0, 0
         #    4: reverse
-        #  call_t, bet_t, raise_t, bet_a, all_in
-        #  5~9: preflop
-        #  10~14: flop
-        #  15~19: turn
-        #  20:24: river
+        #  call_t, bet_t, raise_t, bet_a, all_in, chips, pot, survived
+        #  5~12: preflop
+        #  13~20: flop
+        #  21~28: turn
+        #  29:36: river
         #  label: score
-        features = self.thisRoundUserBehavior.get(player_action["playerName"], [0] * 26)
+        features = self.thisRoundUserBehavior.get(player_action["playerName"], [0] * 38)
 
         if player_action["action"] == 'fold':
             self.thisRoundUserBehavior_for_predict.pop(player_action["playerName"], None)
             features[self.roundSeq] = 1
         elif player_action["action"] == 'call':
-            features[5 * self.roundSeq + 5] += 1
+            features[8 * self.roundSeq + 5] += 1
         elif player_action["action"] == 'bet':
-            features[5 * self.roundSeq + 6] += 1
+            features[8 * self.roundSeq + 6] += 1
         elif player_action["action"] == 'raise':
-            features[5 * self.roundSeq + 7] += 1
+            features[8 * self.roundSeq + 7] += 1
         elif player_action["action"] == 'bet' and player_action["amount"]:
-            features[5 * self.roundSeq + 8] += player_action["amount"] / self.minBet
+            if self.minBet > 0:
+                features[8 * self.roundSeq + 8] += float(player_action["amount"])/self.minBet
+            else:
+                features[8 * self.roundSeq + 8] += float(player_action["amount"])/self.bet
         elif player_action["action"] == 'allin':
-            features[5 * self.roundSeq + 9] += 1
+            features[8 * self.roundSeq + 9] += 1
+
+        # chips 
+        features[8 * self.roundSeq + 10] = float(player_action["chips"])/3000
+        # table pot 
+        features[8 * self.roundSeq + 11] = float(show_action["table"]["totalBet"])/1000
+        # survivor count
+        features[8 * self.roundSeq + 12] = self._get_survivor_count(show_action)
 
         self.thisRoundUserBehavior[player_action["playerName"]] = features
-
+  
         if player_action["playerName"] != self.name_hash:
             self.thisRoundUserBehavior_for_predict[player_action["playerName"]] = features
+
+        #print '*** %s : %s' % (player_action["playerName"], features)
+      
+
+    def _get_survivor_count(self, show_action):
+        count = 0
+        for player in show_action['players']:
+            if player["isSurvive"] and not player["folded"]:
+                count += 1
+        return count
 
     def _get_player_training_data(self, players):
         if not players:
@@ -415,10 +436,12 @@ class PokerClient(object):
 
             for seq, score in enumerate(user_score):
                 # masking the features per round
-                features = features[:seq * 5 + 10]
-                features += [0] * (26 - len(features))
-                features[25] = score
-                round_train_data[player["playerName"]].append(features)
+                features_temp = features[:seq * 8 + 13]
+                features_temp += [0] * (38 - len(features_temp))
+                features_temp[37] = score
+                round_train_data[player["playerName"]].append(features_temp)
+                
+                # print '*** Round %s Player %s feature: %s' %(seq, player["playerName"],features)
 
                 # the user is fold, stop training the following round
                 if features[seq] == 1:
@@ -448,8 +471,11 @@ class PokerClient(object):
                 self._act_deal(action, data)
 
             elif action in (EVENTNAME.ACTION, EVENTNAME.BET):
+                # __action -> bet > 0
+                # __bet -> minBet > 0
                 self.minBet = data['self']['minBet']
-
+                self.bet = data['self']['bet']
+                
                 # reconnection the cards is empty
                 if not self.cards:
                     self.cards = data['self']['cards']
