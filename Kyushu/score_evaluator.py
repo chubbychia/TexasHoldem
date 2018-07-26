@@ -27,10 +27,10 @@ class Player(object):
                 self.is_known_guy = True
             else: 
                 model = Sequential()
-                model.add(Dense(units=50, activation='relu', input_dim=37)) # first layer = 37 dim; Hidden layer = 100 dim
+                model.add(Dense(units=100, activation='relu', input_dim=37)) # first layer = 37 dim; Hidden layer = 100 dim
                 model.add(Dense(units=1, activation='sigmoid')) # output layer = 1
-                #opt = RMSprop(lr=0.0001, decay=1e-6)
-                model.compile(loss='mse', optimizer='adam')
+                #loss = 'logcosh' -> less impact by outlier
+                model.compile(loss='logcosh', optimizer='rmsprop')
 
             Player.PLAYER_MODEL[player_name] = model
         else:
@@ -84,7 +84,7 @@ class Player(object):
 if __name__ == '__main__':
     #train_data = [[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.7616892911010558], [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.32238667900092505], [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.9956521739130435], [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.9956521739130435]]
     player = Player('XXXX')
-    fname = '2018-07-25'
+    fname = '2018-07-26'
     TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ fname + '.pkl')
     train_data = []
     if os.path.exists(TRAINDATA_PATH):

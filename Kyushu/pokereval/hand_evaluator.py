@@ -400,23 +400,31 @@ class HandEvaluator:
 
     evaluate_handboard_rank = staticmethod(evaluate_handboard_rank)
 
-# oppenents example : [[6453, 1453, 1225, 1002], [9324, 4632, 2345, 5643]]
-# me example: [3245,6435,1345,6543]
-def evaluate_stage_winrate(me, opponents):
+# oppenents example : [[0.5535444947209653, 7086, 7084, 7084], [0.9049773755656109, 4085, 4083, 4083], [0.36500754147812975, 7305, 7303, 7303], [0.942684766214178, 6385, 6383, 6383]]
+# me example: [0.39517345399698345, 7296, 7294, 7294]
+def evaluate_stage_winrate(me, opponents):    
     opp_count = len(list(opponents))
     rounds = len(me)
     stage_score = []
     # Rank comparison in preflop, flop, turn,river
     for stg in range(rounds):
         me_win = 0
-        for opp_index in range(opp_count): 
-            if me[stg] < opponents[opp_index][stg]:
-                # you beat this opponent
-                me_win += 1
-            elif me[stg] == opponents[opp_index][stg]:
-                me_win += 0.5           
-        stage_score.insert(stg, float(me_win) / opp_count)
-    
+        for opp_index in range(opp_count):       
+            #Watch out for hand card exception 9999
+            if me[stg] != 9999:
+                if stg == 0: # Chen formula: 0~1. Bigger prob win. 
+                    if me[stg] > opponents[opp_index][stg] or opponents[opp_index][stg] == 9999:
+                        me_win += 1
+                    elif me[stg] == opponents[opp_index][stg]:
+                        me_win += 0.5   
+                else:  
+                    if me[stg] < opponents[opp_index][stg]:
+                        # you beat this opponent
+                        me_win += 1
+                    elif me[stg] == opponents[opp_index][stg]:
+                        me_win += 0.5           
+        
+        stage_score.insert(stg, round(float(me_win)/opp_count,2))
     return stage_score
 
 CARD_MAPPING = {

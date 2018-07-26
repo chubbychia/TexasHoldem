@@ -101,12 +101,10 @@ class RefereePlayer(PokerClient):
                         return (BET, 5)
                     elif my_score > the_pred_values[1]:
                         return (BET, 3)
-                    elif my_score > the_pred_values[2]:
-                        return (BET, 2)
-                    #elif my_score > the_pred_values[3]:
-                        #return (BET, 1)
+                    elif my_score > the_pred_values[int(len(the_pred_values)/2)]:
+                        return (BET, 1)  
                     elif my_score > min(the_pred_values):
-                        return CALL   
+                        return CALL    
                     else:
                         return FOLD  
                 elif data["game"]["roundName"] == "River":    
@@ -114,15 +112,12 @@ class RefereePlayer(PokerClient):
                         return (BET, 5)
                     elif my_score > the_pred_values[1]:
                         return (BET, 3)
-                    elif my_score > the_pred_values[2]:
-                        return (BET, 2)
-                    #elif my_score > the_pred_values[3]:
-                        #return (BET, 1)
-                    elif my_score > min(the_pred_values):
-                        return CALL 
+                    elif my_score > the_pred_values[int(len(the_pred_values)/2)]:
+                        return CALL
                     else:
-                        return FOLD           
+                        return FOLD      
         return CHECK
+
 
     def predict(self, data=None):
         act = self.behavior_predict(data)

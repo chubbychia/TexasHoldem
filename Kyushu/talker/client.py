@@ -382,18 +382,18 @@ class PokerClient(object):
             features[8 * self.roundSeq + 7] += 1
         elif player_action["action"] == 'bet' and player_action["amount"]:
             if self.minBet > 0:
-                features[8 * self.roundSeq + 8] += float(player_action["amount"])/self.minBet
+                features[8 * self.roundSeq + 8] += round(float(player_action["amount"])/self.minBet,2)
             else:
-                features[8 * self.roundSeq + 8] += float(player_action["amount"])/self.bet
+                features[8 * self.roundSeq + 8] += round(float(player_action["amount"])/self.bet,2)
         elif player_action["action"] == 'allin':
             features[8 * self.roundSeq + 9] += 1
 
         # chips 
-        features[8 * self.roundSeq + 10] = float(player_action["chips"])/3000
+        features[8 * self.roundSeq + 10] = round(float(player_action["chips"])/3000,2)
         # table pot 
-        features[8 * self.roundSeq + 11] = float(show_action["table"]["totalBet"])/1000
+        features[8 * self.roundSeq + 11] = round(float(show_action["table"]["totalBet"])/1000,2)
         # survivor count
-        features[8 * self.roundSeq + 12] = self._get_survivor_count(show_action)
+        features[8 * self.roundSeq + 12] = round(self._get_survivor_count(show_action),2)
 
         self.thisRoundUserBehavior[player_action["playerName"]] = features
   
@@ -424,24 +424,26 @@ class PokerClient(object):
             h_cards = player["cards"]
             user_rank[player["playerName"]].append([get_rank(h_cards, self.board[:c]) for c in (0, 3, 4, 5)])
         
+        #print '*** user_rank: %s' %user_rank
+        
         for player in players:
             features = self.thisRoundUserBehavior.get(player["playerName"], None)
             if not features:
                 continue            
            
-            others_rank = [value for key, value in user_rank.iteritems() if key !=player["playerName"]]
-            user_score = evaluate_stage_winrate(user_rank[player["playerName"]], others_rank)
-            #h_cards = player["cards"]
-            #user_score = [get_score(h_cards, self.board[:c]) for c in (0, 3, 4, 5)]
-
+            others_rank = [value[0] for key, value in user_rank.iteritems() if key !=player["playerName"]]
+            user_score = evaluate_stage_winrate(user_rank[player["playerName"]][0], others_rank)
+        
+            #print '*** User %s score: %s' % (player["playerName"],user_score)
+            
             for seq, score in enumerate(user_score):
                 # masking the features per round
-                features_temp = features[:seq * 8 + 13]
-                features_temp += [0] * (38 - len(features_temp))
-                features_temp[37] = score
-                round_train_data[player["playerName"]].append(features_temp)
+                feature_temp = features[:seq * 8 + 13]
+                feature_temp += [0] * (38 - len(feature_temp))
+                feature_temp[37] = score
+                round_train_data[player["playerName"]].append(feature_temp)
                 
-                # print '*** Round %s Player %s feature: %s' %(seq, player["playerName"],features)
+                #print '*** Round(%s) Player %s training features: %s' %(seq, player["playerName"],feature_temp)
 
                 # the user is fold, stop training the following round
                 if features[seq] == 1:
