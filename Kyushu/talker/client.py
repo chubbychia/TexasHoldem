@@ -400,7 +400,7 @@ class PokerClient(object):
         if player_action["playerName"] != self.name_hash:
             self.thisRoundUserBehavior_for_predict[player_action["playerName"]] = features
 
-        #print '*** %s : %s' % (player_action["playerName"], features)
+        #print '*** Round(%d) => %s : %s' % (self.roundSeq, player_action["playerName"], features)
       
 
     def _get_survivor_count(self, show_action):
@@ -439,15 +439,19 @@ class PokerClient(object):
             for seq, score in enumerate(user_score):
                 # masking the features per round
                 feature_temp = features[:seq * 8 + 13]
+                print '*** Round (%d) feature_temp: %s' % (seq, feature_temp)
                 feature_temp += [0] * (38 - len(feature_temp))
+                print '*** Round (%d) compensate 0: %s' % (seq, feature_temp)
                 feature_temp[37] = score
                 round_train_data[player["playerName"]].append(feature_temp)
                 
-                #print '*** Round(%s) Player %s training features: %s' %(seq, player["playerName"],feature_temp)
-
                 # the user is fold, stop training the following round
                 if features[seq] == 1:
                     break
+
+        # for player, data in round_train_data.iteritems():
+        #      for i, round_data in enumerate(data):
+        #         print '*** Round(%s) Player %s training features: %s' %(i, player, round_data)
 
         return round_train_data
 

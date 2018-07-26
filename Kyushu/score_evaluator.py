@@ -30,7 +30,7 @@ class Player(object):
                 model.add(Dense(units=100, activation='relu', input_dim=37)) # first layer = 37 dim; Hidden layer = 100 dim
                 model.add(Dense(units=1, activation='sigmoid')) # output layer = 1
                 #loss = 'logcosh' -> less impact by outlier
-                model.compile(loss='logcosh', optimizer='rmsprop')
+                model.compile(loss='logcosh', optimizer='adam')
 
             Player.PLAYER_MODEL[player_name] = model
         else:
