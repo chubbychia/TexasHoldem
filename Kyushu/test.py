@@ -1,12 +1,18 @@
 import pickle
 import datetime
 import os
+import sys
 
 if __name__ == '__main__':
+    
+    if len(sys.argv) < 2: # 1
+        print "Usage:", sys.argv[0], "<FILENAME>"
+        sys.exit(1)       # 2
+
+    fname = sys.argv[1]
+   
     current_folder = os.path.dirname(os.path.abspath(__file__))
-    now = datetime.datetime.now()
-    #now='2018-07-25'
-    TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ str(now)[:10] + '.pkl')
+    TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ fname + '.pkl')
    
     directory = os.path.dirname(TRAINDATA_PATH)
 

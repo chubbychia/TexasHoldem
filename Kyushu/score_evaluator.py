@@ -28,8 +28,10 @@ class Player(object):
             else: 
                 model = Sequential()
                 model.add(Dense(units=100, activation='relu', input_dim=37)) # first layer = 37 dim; Hidden layer = 100 dim
+                model.add(Dense(units=50, activation='relu')) 
                 model.add(Dense(units=1, activation='sigmoid')) # output layer = 1
                 #loss = 'logcosh' -> less impact by outlier
+                #rmsprop
                 model.compile(loss='logcosh', optimizer='adam')
 
             Player.PLAYER_MODEL[player_name] = model
@@ -116,10 +118,12 @@ if __name__ == '__main__':
     x_test = np.asarray(x_test)  
     y_test = np.asarray(y_test)  
     
-    history = player.model.fit(x_data, y_data, validation_split=0.33, epochs=150, batch_size=10, verbose=0)
-    score = player.model.evaluate(x_test, y_test, batch_size=32)
+    history = player.model.fit(x_data, y_data, validation_split=0.33, epochs=150, batch_size=128, verbose=0)
+    scoretrain = player.model.evaluate(x_data, y_data, batch_size=32)
+   
+    scoretest = player.model.evaluate(x_test, y_test, batch_size=32)
     
-    print score
+    print 'TrainingSet lost %f \nTestingSet lost %f' % (scoretrain, scoretest)
    
     # list all data in history
     #print(history.history.keys())

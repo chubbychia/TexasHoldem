@@ -20,10 +20,10 @@ from score_evaluator import Player
 DUMMY_PLAYER = 'XXXX'
 current_folder = os.path.dirname(os.path.abspath(__file__))
 class RefereePlayer(PokerClient):
-    #CLIENT_NAME = os.environ.get("TABLE", "") + "35b50b7d6d6a41c7a51625d76cc5abc2"
+    CLIENT_NAME = os.environ.get("TABLE", "") + "35b50b7d6d6a41c7a51625d76cc5abc2"
     #CLIENT_NAME = u"新店小栗旬"
 
-    CLIENT_NAME = os.environ.get("TABLE", "") + "jojotrain"
+    #CLIENT_NAME = os.environ.get("TABLE", "") + "jojotrain"
     
     def save_append_training_data(self, behavior):        
         now = datetime.datetime.now()
@@ -103,8 +103,8 @@ class RefereePlayer(PokerClient):
                         return (BET, 3)
                     elif my_score > the_pred_values[int(len(the_pred_values)/2)]:
                         return (BET, 1)  
-                    elif my_score > min(the_pred_values):
-                        return CALL    
+                    #elif my_score > min(the_pred_values):
+                        #return CALL    
                     else:
                         return FOLD  
                 elif data["game"]["roundName"] == "River":    

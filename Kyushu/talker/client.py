@@ -17,20 +17,20 @@ from holdem.card import Card
 import event as EVENTNAME
 import hashlib
 
-#ws = create_connection("ws://poker-battle.vtr.trendnet.org:3001")
-ws = create_connection("ws://poker-training.vtr.trendnet.org:3001")
-#ws = create_connection("ws://poker-dev.wrs.club:3001")
-RETRY = 3
-
+server = "ws://poker-battle.vtr.trendnet.org:3001"
+#server = "ws://poker-training.vtr.trendnet.org:3001"
+#server = "ws://poker-dev.wrs.club:3001"
+RETRY = 5
+ws = create_connection(server)
 
 class GameOverException(Exception):
     pass
 
 
 class PokerClient(object):
-    #CLIENT_NAME = "35b50b7d6d6a41c7a51625d76cc5abc2"
+    CLIENT_NAME = "35b50b7d6d6a41c7a51625d76cc5abc2"
 
-    CLIENT_NAME = "jojotrain"
+    #CLIENT_NAME = "jojotrain"
     def __init__(self):
         self._name_hash = None
         self._chips = 0
@@ -194,7 +194,9 @@ class PokerClient(object):
         payload = {"eventName": event_name}
         if data:
             payload["data"] = data
-
+        global ws
+        if not ws:
+            ws = create_connection(server)
         while 1:
             try:
                 ws.send(json.dumps(payload))
@@ -202,6 +204,7 @@ class PokerClient(object):
             except BaseException as err:
                 print "send event error: {} try times: {}".format(err, retry)
                 retry += 1
+                ws = create_connection(server)
                 if retry < RETRY:
                     continue
                 else:
@@ -439,9 +442,9 @@ class PokerClient(object):
             for seq, score in enumerate(user_score):
                 # masking the features per round
                 feature_temp = features[:seq * 8 + 13]
-                print '*** Round (%d) feature_temp: %s' % (seq, feature_temp)
+                #print '*** Round (%d) feature_temp: %s' % (seq, feature_temp)
                 feature_temp += [0] * (38 - len(feature_temp))
-                print '*** Round (%d) compensate 0: %s' % (seq, feature_temp)
+                #print '*** Round (%d) compensate 0: %s' % (seq, feature_temp)
                 feature_temp[37] = score
                 round_train_data[player["playerName"]].append(feature_temp)
                 
@@ -525,7 +528,7 @@ class PokerClient(object):
             )
 
     def doListen(self):
-
+        global ws
         try:
             # ws.send(json.dumps({
             #     "eventName": "__join",
