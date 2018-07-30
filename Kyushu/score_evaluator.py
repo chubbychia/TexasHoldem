@@ -4,7 +4,6 @@ from collections import defaultdict
 from keras.models import Sequential
 from keras.models import load_model
 from keras.layers import Dense, Dropout, Activation
-from keras.optimizers import RMSprop
 import pickle
 from keras import metrics
 
@@ -31,8 +30,7 @@ class Player(object):
                 model.add(Dense(units=50, activation='relu')) 
                 model.add(Dense(units=1, activation='sigmoid')) # output layer = 1
                 #loss = 'logcosh' -> less impact by outlier
-                #rmsprop
-                model.compile(loss='logcosh', optimizer='adam')
+                model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
             Player.PLAYER_MODEL[player_name] = model
         else:
@@ -50,7 +48,7 @@ class Player(object):
     def is_bluffing_guy(self):
         for round_seq in (0, 1, 2, 3):
             if self.is_known_guy or len(Player.TRAIN_COST[self.player_name][round_seq]) > 10:
-                if sum(Player.TRAIN_COST[self.player_name][round_seq][:5]) / 5 > 0.3:
+                if sum(Player.TRAIN_COST[self.player_name][0][round_seq][:5]) / 5 > 0.3:
                     return True
                 return False
         return None
@@ -85,8 +83,13 @@ class Player(object):
 
 if __name__ == '__main__':
     #train_data = [[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.7616892911010558], [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.32238667900092505], [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.9956521739130435], [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.9956521739130435]]
+    import sys
     player = Player('XXXX')
-    fname = '2018-07-26'
+    if len(sys.argv) < 2: # 1
+        print "Usage:", sys.argv[0], "<FILENAME>"
+        sys.exit(1)       # 2
+
+    fname = sys.argv[1]
     TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ fname + '.pkl')
     train_data = []
     if os.path.exists(TRAINDATA_PATH):
@@ -118,13 +121,20 @@ if __name__ == '__main__':
     x_test = np.asarray(x_test)  
     y_test = np.asarray(y_test)  
     
-    history = player.model.fit(x_data, y_data, validation_split=0.33, epochs=150, batch_size=128, verbose=0)
-    scoretrain = player.model.evaluate(x_data, y_data, batch_size=32)
-   
-    scoretest = player.model.evaluate(x_test, y_test, batch_size=32)
+ 
+    history = player.model.fit(x_data, y_data, validation_split=0.3, epochs=100, batch_size=100,verbose=0)
     
-    print 'TrainingSet lost %f \nTestingSet lost %f' % (scoretrain, scoretest)
-   
+    scoretrain = player.model.evaluate(x_data, y_data)
+    scoretest = player.model.evaluate(x_test, y_test)
+    
+    # cost=player.model.predict(x_test)
+    # for v, y in zip(cost, y_test):
+    #     print 'real y: %s pred y: %s' % (y, v)
+
+    print 'TrainingSet loss and accu: %s \nTestingSet loss and accu: %s' % (scoretrain, scoretest)
+
+    #player.save_model() 
+    
     # list all data in history
     #print(history.history.keys())
    

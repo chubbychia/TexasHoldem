@@ -17,8 +17,8 @@ from holdem.card import Card
 import event as EVENTNAME
 import hashlib
 
-server = "ws://poker-battle.vtr.trendnet.org:3001"
-#server = "ws://poker-training.vtr.trendnet.org:3001"
+#server = "ws://poker-battle.vtr.trendnet.org:3001"
+server = "ws://poker-training.vtr.trendnet.org:3001"
 #server = "ws://poker-dev.wrs.club:3001"
 RETRY = 5
 ws = create_connection(server)
@@ -28,9 +28,9 @@ class GameOverException(Exception):
 
 
 class PokerClient(object):
-    CLIENT_NAME = "35b50b7d6d6a41c7a51625d76cc5abc2"
+    #CLIENT_NAME = "35b50b7d6d6a41c7a51625d76cc5abc2"
 
-    #CLIENT_NAME = "jojotrain"
+    CLIENT_NAME = "jojotrain"
     def __init__(self):
         self._name_hash = None
         self._chips = 0
@@ -438,13 +438,17 @@ class PokerClient(object):
             user_score = evaluate_stage_winrate(user_rank[player["playerName"]][0], others_rank)
         
             #print '*** User %s score: %s' % (player["playerName"],user_score)
-            
             for seq, score in enumerate(user_score):
+                boundary = seq * 8 + 13
+                pre_boundary = 5
+                if seq:
+                    pre_boundary = (seq - 1) * 8 + 13
+                feature_temp = features[0:5] # folding info + reverse
+                feature_temp += [0] * (pre_boundary-5) # heading 0
+                
                 # masking the features per round
-                feature_temp = features[:seq * 8 + 13]
-                #print '*** Round (%d) feature_temp: %s' % (seq, feature_temp)
+                feature_temp += features[pre_boundary:boundary]
                 feature_temp += [0] * (38 - len(feature_temp))
-                #print '*** Round (%d) compensate 0: %s' % (seq, feature_temp)
                 feature_temp[37] = score
                 round_train_data[player["playerName"]].append(feature_temp)
                 
