@@ -365,7 +365,7 @@ class PokerClient(object):
         # },
         # round features:
         #  0~3: Fold:0, 0, 0, 0
-        #    4: reverse
+        #    4: reverse 
         #  call_t, bet_t, raise_t, bet_a, all_in, chips, pot, survived
         #  5~12: preflop
         #  13~20: flop
@@ -413,6 +413,7 @@ class PokerClient(object):
                 count += 1
         return count
 
+    #players = round_end players data
     def _get_player_training_data(self, players):
         if not players:
             return
@@ -436,23 +437,33 @@ class PokerClient(object):
            
             others_rank = [value[0] for key, value in user_rank.iteritems() if key !=player["playerName"]]
             user_score = evaluate_stage_winrate(user_rank[player["playerName"]][0], others_rank)
-        
+            
+            # 2018-07-31. Use 0 to label losing, 1 to lable winning. 
+            # Ex: if one wins in flop, marking the succeeding rounds score to 1
+            if player["winMoney"]:
+                i = self.roundSeq
+                while i < len(Round.ALL):
+                    user_score[i] = 1
+                    i += 1
+                print 'Round (%s) Player %s' % (self.roundSeq, player["playerName"])
+            else:
+                user_score[self.roundSeq] = 0
+            
             #print '*** User %s score: %s' % (player["playerName"],user_score)
             for seq, score in enumerate(user_score):
+                boundary = seq * 8 + 13
                 # masking the features per round
-                feature_temp = features[:seq * 8 + 13]
-                #print '*** Round (%d) feature_temp: %s' % (seq, feature_temp)
+                feature_temp = features[:boundary]
                 feature_temp += [0] * (38 - len(feature_temp))
-                #print '*** Round (%d) compensate 0: %s' % (seq, feature_temp)
                 feature_temp[37] = score
                 round_train_data[player["playerName"]].append(feature_temp)
-
+                
                 # the user is fold, stop training the following round
                 if features[seq] == 1:
                     break
 
         # for player, data in round_train_data.iteritems():
-        #      for i, round_data in enumerate(data):
+        #     for i, round_data in enumerate(data):
         #         print '*** Round(%s) Player %s training features: %s' %(i, player, round_data)
 
         return round_train_data
@@ -557,7 +568,7 @@ class PokerClient(object):
 
         except Exception as e:
             print e
-            time.sleep(5)
+            time.sleep(10)
             self.doListen()
 
 

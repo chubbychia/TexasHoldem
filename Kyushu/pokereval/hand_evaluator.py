@@ -413,18 +413,19 @@ def evaluate_stage_winrate(me, opponents):
             #Watch out for hand card exception 9999
             if me[stg] != 9999:
                 if stg == 0: # Chen formula: 0~1. Bigger prob win. 
-                    if me[stg] > opponents[opp_index][stg] or opponents[opp_index][stg] == 9999:
+                    if me[stg] >= opponents[opp_index][stg] or opponents[opp_index][stg] == 9999:
                         me_win += 1
-                    elif me[stg] == opponents[opp_index][stg]:
-                        me_win += 0.5   
                 else:  
-                    if me[stg] < opponents[opp_index][stg]:
+                    if me[stg] <= opponents[opp_index][stg]:
                         # you beat this opponent
-                        me_win += 1
-                    elif me[stg] == opponents[opp_index][stg]:
-                        me_win += 0.5           
+                        me_win += 1       
         
-        stage_score.insert(stg, round(float(me_win)/opp_count,2))
+        #stage_score.insert(stg, round(float(me_win)/opp_count,2))
+        # If treat it as a classification problem, only when the score is the highest is the winner
+        if me_win == opp_count:
+            stage_score.insert(stg, 1)
+        else:
+            stage_score.insert(stg, 0)
     return stage_score
 
 CARD_MAPPING = {

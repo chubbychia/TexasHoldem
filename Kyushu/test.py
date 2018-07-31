@@ -12,15 +12,15 @@ if __name__ == '__main__':
     fname = sys.argv[1]
    
     current_folder = os.path.dirname(os.path.abspath(__file__))
-    TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ fname + '.pkl')
-    #NEWLABEL_PATH = os.path.join(current_folder, 'training/newlabel_'+ fname + '.pkl')
+    PATH = os.path.join(current_folder, 'training/'+ fname + '.pkl')
+    #PATH = os.path.join(current_folder, 'training/newlabel_'+ fname + '.pkl')
    
-    directory = os.path.dirname(TRAINDATA_PATH)
+    directory = os.path.dirname(PATH)
 
     obj = []
     count = 0
-    if os.path.exists(TRAINDATA_PATH):
-        with open(TRAINDATA_PATH, 'rb') as f:
+    if os.path.exists(PATH):
+        with open(PATH, 'rb') as f:
             while True:
                 try:
                     print pickle.load(f)
@@ -29,5 +29,5 @@ if __name__ == '__main__':
                     break
         print 'Total training data number: %d' %count    
     else:
-        print 'No such training file %s' % (TRAINDATA_PATH)
+        print 'No such training file %s' % (PATH)
 

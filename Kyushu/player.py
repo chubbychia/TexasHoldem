@@ -43,7 +43,6 @@ class RefereePlayer(PokerClient):
     def _act_end_round(self, action, data):
 
         super(RefereePlayer, self)._act_end_round(action, data)
-
         # the training data for user behavior
         user_behaviors = self._get_player_training_data(data["players"])
         if user_behaviors:
@@ -97,7 +96,9 @@ class RefereePlayer(PokerClient):
                     else:
                         return FOLD    
                 elif data["game"]["roundName"] == "Turn":    
-                    if my_score > max(the_pred_values):
+                    if my_score > max(the_pred_values) and my_score > 0.85:
+                        return (BET, 8)
+                    elif my_score > max(the_pred_values):
                         return (BET, 5)
                     elif my_score > the_pred_values[1]:
                         return (BET, 3)
@@ -108,8 +109,10 @@ class RefereePlayer(PokerClient):
                     else:
                         return FOLD  
                 elif data["game"]["roundName"] == "River":    
-                    if my_score > max(the_pred_values):
+                    if my_score > max(the_pred_values) and my_score > 0.85:
                         return (BET, 8)
+                    elif my_score > max(the_pred_values):
+                        return (BET, 5)
                     elif my_score > the_pred_values[1]:
                         return (BET, 3)
                     elif my_score > the_pred_values[int(len(the_pred_values)/2)]:

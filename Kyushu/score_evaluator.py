@@ -128,7 +128,7 @@ def evaluate_classifier(PATH, player):
     #     print 'real y: %s pred y: %s' % (y, v)
 
     print 'TrainingSet loss and accu: %s \nTestingSet loss and accu: %s' % (scoretrain, scoretest)
-    #player.save_model() 
+    player.save_model() 
    
 
 
@@ -141,7 +141,7 @@ if __name__ == '__main__':
     fname = sys.argv[1]
     NEWLABEL_PATH = os.path.join(current_folder, 'training/newlabel_'+ fname + '.pkl')
     TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ fname + '.pkl')
-    evaluate_classifier(TRAINDATA_PATH, player)
+    evaluate_classifier(NEWLABEL_PATH, player)
     
     # regression problem 
     # 
