@@ -439,19 +439,14 @@ class PokerClient(object):
         
             #print '*** User %s score: %s' % (player["playerName"],user_score)
             for seq, score in enumerate(user_score):
-                boundary = seq * 8 + 13
-                pre_boundary = 5
-                if seq:
-                    pre_boundary = (seq - 1) * 8 + 13
-                feature_temp = features[0:5] # folding info + reverse
-                feature_temp += [0] * (pre_boundary-5) # heading 0
-                
                 # masking the features per round
-                feature_temp += features[pre_boundary:boundary]
+                feature_temp = features[:seq * 8 + 13]
+                #print '*** Round (%d) feature_temp: %s' % (seq, feature_temp)
                 feature_temp += [0] * (38 - len(feature_temp))
+                #print '*** Round (%d) compensate 0: %s' % (seq, feature_temp)
                 feature_temp[37] = score
                 round_train_data[player["playerName"]].append(feature_temp)
-                
+
                 # the user is fold, stop training the following round
                 if features[seq] == 1:
                     break

@@ -13,6 +13,7 @@ if __name__ == '__main__':
    
     current_folder = os.path.dirname(os.path.abspath(__file__))
     TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ fname + '.pkl')
+    #NEWLABEL_PATH = os.path.join(current_folder, 'training/newlabel_'+ fname + '.pkl')
    
     directory = os.path.dirname(TRAINDATA_PATH)
 

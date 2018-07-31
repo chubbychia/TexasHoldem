@@ -109,7 +109,7 @@ class RefereePlayer(PokerClient):
                         return FOLD  
                 elif data["game"]["roundName"] == "River":    
                     if my_score > max(the_pred_values):
-                        return (BET, 5)
+                        return (BET, 8)
                     elif my_score > the_pred_values[1]:
                         return (BET, 3)
                     elif my_score > the_pred_values[int(len(the_pred_values)/2)]:

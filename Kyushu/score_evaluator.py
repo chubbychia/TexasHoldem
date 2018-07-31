@@ -1,4 +1,5 @@
 import os
+import sys
 import numpy as np
 from collections import defaultdict
 from keras.models import Sequential
@@ -6,6 +7,10 @@ from keras.models import load_model
 from keras.layers import Dense, Dropout, Activation
 import pickle
 from keras import metrics
+from keras.wrappers.scikit_learn import KerasRegressor
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import KFold
+from sklearn.preprocessing import StandardScaler
 
 current_folder = os.path.dirname(os.path.abspath(__file__))
 # HDF5 file, you have to pip3 install h5py if don't have it
@@ -26,10 +31,11 @@ class Player(object):
                 self.is_known_guy = True
             else: 
                 model = Sequential()
-                model.add(Dense(units=100, activation='relu', input_dim=37)) # first layer = 37 dim; Hidden layer = 100 dim
+                model.add(Dense(units=100, activation='relu', input_dim=37)) # first layer = 37 dim; Hidden layer = 100 dim     
                 model.add(Dense(units=50, activation='relu')) 
                 model.add(Dense(units=1, activation='sigmoid')) # output layer = 1
                 #loss = 'logcosh' -> less impact by outlier
+                #binary_crossentropy
                 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
             Player.PLAYER_MODEL[player_name] = model
@@ -80,20 +86,11 @@ class Player(object):
             print "fails to predict user behavior, because:%s" % err
             return None
 
-
-if __name__ == '__main__':
-    #train_data = [[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.7616892911010558], [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.32238667900092505], [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.9956521739130435], [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.9956521739130435]]
-    import sys
-    player = Player('XXXX')
-    if len(sys.argv) < 2: # 1
-        print "Usage:", sys.argv[0], "<FILENAME>"
-        sys.exit(1)       # 2
-
-    fname = sys.argv[1]
-    TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ fname + '.pkl')
+def evaluate_classifier(PATH, player):
+   
     train_data = []
-    if os.path.exists(TRAINDATA_PATH):
-        with open(TRAINDATA_PATH, 'rb') as f:
+    if os.path.exists(PATH):
+        with open(PATH, 'rb') as f:
             while True:
                 try:
                     train_data.append(pickle.load(f))
@@ -101,7 +98,7 @@ if __name__ == '__main__':
                     break
         #print len(train_data)
     else:
-        print 'No such training file %s' % (TRAINDATA_PATH)
+        print 'No such training file %s' % (PATH)
 
     x_data=[]
     y_data=[]
@@ -121,9 +118,8 @@ if __name__ == '__main__':
     x_test = np.asarray(x_test)  
     y_test = np.asarray(y_test)  
     
- 
-    history = player.model.fit(x_data, y_data, validation_split=0.3, epochs=100, batch_size=100,verbose=0)
-    
+    #Classifier evaluation. Use newlabel_xxxx-xx-xx.pkl data
+    player.model.fit(x_data, y_data, validation_split=0.3, epochs=100, batch_size=128,verbose=0)
     scoretrain = player.model.evaluate(x_data, y_data)
     scoretest = player.model.evaluate(x_test, y_test)
     
@@ -132,12 +128,35 @@ if __name__ == '__main__':
     #     print 'real y: %s pred y: %s' % (y, v)
 
     print 'TrainingSet loss and accu: %s \nTestingSet loss and accu: %s' % (scoretrain, scoretest)
-
     #player.save_model() 
-    
-    # list all data in history
-    #print(history.history.keys())
    
 
 
-    # a.predict([0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 1)
+if __name__ == '__main__':
+    player = Player('XXXX')
+    if len(sys.argv) < 2: # 1
+        print "Usage:", sys.argv[0], "<FILENAME>"
+        sys.exit(1)       # 2
+
+    fname = sys.argv[1]
+    NEWLABEL_PATH = os.path.join(current_folder, 'training/newlabel_'+ fname + '.pkl')
+    TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ fname + '.pkl')
+    evaluate_classifier(TRAINDATA_PATH, player)
+    
+    # regression problem 
+    # 
+    # train_data = []
+    # if os.path.exists(TRAINDATA_PATH):
+    #     with open(TRAINDATA_PATH, 'rb') as f:
+    #         while True:
+    #             try:
+    #                 train_data.append(pickle.load(f))
+    #             except EOFError:
+    #                 break
+    #     #print len(train_data)
+    # else:
+    #     print 'No such training file %s' % (TRAINDATA_PATH)
+    
+    #player.save_model() 
+    
+  
