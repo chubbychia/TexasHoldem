@@ -468,14 +468,6 @@ class PokerClient(object):
                 feature_temp = features[0:5] # folding info + reverse
                 # masking the features per round
                 feature_temp += features[pre_boundary:boundary]
-                skip = 0
-                for f in feature_temp:
-                    if f:
-                        break
-                    else:
-                        skip = 1
-                if skip:
-                    continue
                 feature_temp += [0] * (14 - len(feature_temp))
                 feature_temp[13] = score
                 round_train_data[player["playerName"]].append(feature_temp)
