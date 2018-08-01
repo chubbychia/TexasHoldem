@@ -413,6 +413,16 @@ class PokerClient(object):
                 count += 1
         return count
 
+    def _get_predicion_data(self, features, seq):
+        boundary = seq * 8 + 13
+        pre_boundary = 5
+        if seq:
+            pre_boundary = (seq - 1) * 8 + 13
+        feature_temp = features[0:5] # folding info + reverse
+        feature_temp += features[pre_boundary:boundary]  #Only 13 values. Omit label
+        return feature_temp
+        
+        
     #players = round_end players data
     def _get_player_training_data(self, players):
         if not players:
@@ -445,26 +455,38 @@ class PokerClient(object):
                 while i < len(Round.ALL):
                     user_score[i] = 1
                     i += 1
-                print 'Round (%s) Player %s' % (self.roundSeq, player["playerName"])
+                #print 'Round (%s) Player %s' % (self.roundSeq, player["playerName"])
             else:
                 user_score[self.roundSeq] = 0
             
             #print '*** User %s score: %s' % (player["playerName"],user_score)
             for seq, score in enumerate(user_score):
                 boundary = seq * 8 + 13
+                pre_boundary = 5
+                if seq:
+                    pre_boundary = (seq - 1) * 8 + 13
+                feature_temp = features[0:5] # folding info + reverse
                 # masking the features per round
-                feature_temp = features[:boundary]
-                feature_temp += [0] * (38 - len(feature_temp))
-                feature_temp[37] = score
+                feature_temp += features[pre_boundary:boundary]
+                skip = 0
+                for f in feature_temp:
+                    if f:
+                        break
+                    else:
+                        skip = 1
+                if skip:
+                    continue
+                feature_temp += [0] * (14 - len(feature_temp))
+                feature_temp[13] = score
                 round_train_data[player["playerName"]].append(feature_temp)
                 
                 # the user is fold, stop training the following round
                 if features[seq] == 1:
                     break
 
-        # for player, data in round_train_data.iteritems():
-        #     for i, round_data in enumerate(data):
-        #         print '*** Round(%s) Player %s training features: %s' %(i, player, round_data)
+        for player, data in round_train_data.iteritems():
+            for i, round_data in enumerate(data):
+                print '*** Round(%s) Player %s training features: %s' %(i, player, round_data)
 
         return round_train_data
 

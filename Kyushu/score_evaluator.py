@@ -31,7 +31,7 @@ class Player(object):
                 self.is_known_guy = True
             else: 
                 model = Sequential()
-                model.add(Dense(units=100, activation='relu', input_dim=37)) # first layer = 37 dim; Hidden layer = 100 dim     
+                model.add(Dense(units=100, activation='relu', input_dim=13)) 
                 model.add(Dense(units=50, activation='relu')) 
                 model.add(Dense(units=1, activation='sigmoid')) # output layer = 1
                 #loss = 'logcosh' -> less impact by outlier
@@ -67,9 +67,9 @@ class Player(object):
 
     def train(self, train_data):
         for i, data in enumerate(train_data):
-            y_pred = self.model.predict(np.reshape(np.asarray(data[:37]), (1, 37)))[0][0]
-            x_data = np.reshape(np.asarray(data[:37]), (1, 37))
-            y_data = np.asarray(data[37:])
+            y_pred = self.model.predict(np.reshape(np.asarray(data[:13]), (1, 13)))[0][0]
+            x_data = np.reshape(np.asarray(data[:13]), (1, 13))
+            y_data = np.asarray(data[13:])
             cost = self.model.train_on_batch(x_data, y_data)
             print "Player(%s) Round(%s) train cost: %s, y_data:%s, y_pred:%s" % (self.player_name, i, cost, y_data, y_pred)
             Player.TRAIN_COST[self.player_name][i].append(cost)
@@ -79,7 +79,7 @@ class Player(object):
     def predict(self, predict_data, round_seq):
         try:
             cost = Player.TRAIN_COST[self.player_name][round_seq]
-            predict_value = self.model.predict(np.reshape(np.asarray(predict_data), (1, 37)))[0][0]
+            predict_value = self.model.predict(np.reshape(np.asarray(predict_data), (1, 13)))[0][0]
             print "Player(%s) Round(%s) predict value: %s" % (self.player_name, round_seq, predict_value)
             return predict_value
         except Exception as err:
@@ -107,11 +107,11 @@ def evaluate_classifier(PATH, player):
     for i, flat in enumerate(train_data):
         for stg in flat:
             if i < len(train_data)/3:
-                x_test.append(stg[:37])
-                y_test.append(stg[37:])
+                x_test.append(stg[:13])
+                y_test.append(stg[13:])
             else:
-                x_data.append(stg[:37])
-                y_data.append(stg[37:])
+                x_data.append(stg[:13])
+                y_data.append(stg[13:])
     
     x_data = np.asarray(x_data)  
     y_data = np.asarray(y_data)  
@@ -128,7 +128,7 @@ def evaluate_classifier(PATH, player):
     #     print 'real y: %s pred y: %s' % (y, v)
 
     print 'TrainingSet loss and accu: %s \nTestingSet loss and accu: %s' % (scoretrain, scoretest)
-    player.save_model() 
+    #player.save_model() 
    
 
 
@@ -141,7 +141,7 @@ if __name__ == '__main__':
     fname = sys.argv[1]
     NEWLABEL_PATH = os.path.join(current_folder, 'training/newlabel_'+ fname + '.pkl')
     TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ fname + '.pkl')
-    evaluate_classifier(NEWLABEL_PATH, player)
+    evaluate_classifier(TRAINDATA_PATH, player)
     
     # regression problem 
     # 

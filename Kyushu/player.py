@@ -63,7 +63,10 @@ class RefereePlayer(PokerClient):
         simulate_score = 0
         dummyplayer = Player(DUMMY_PLAYER)
         for player_name, behavior in self.thisRoundUserBehavior_for_predict.iteritems():
-            simulate_score = dummyplayer.predict(behavior[:37], self.roundSeq)
+            #print '*** Predict Round(%s) by attr: %s' % (self.roundSeq, behavior)
+            trans_behav = self._get_predicion_data(behavior, self.roundSeq)
+            #print '*** Predict Round(%s) by transformed attr: %s' % (self.roundSeq, trans_behav)
+            simulate_score = dummyplayer.predict(trans_behav, self.roundSeq)
             if np.math.isnan(simulate_score):
                 simulate_score = self.simulation(data, 10000)
             predict_values[player_name] = simulate_score
@@ -103,7 +106,7 @@ class RefereePlayer(PokerClient):
                     elif my_score > the_pred_values[1]:
                         return (BET, 3)
                     elif my_score > the_pred_values[int(len(the_pred_values)/2)]:
-                        return (BET, 1)  
+                        return CALL  
                     #elif my_score > min(the_pred_values):
                         #return CALL    
                     else:
