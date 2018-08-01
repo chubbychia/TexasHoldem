@@ -420,12 +420,12 @@ def evaluate_stage_winrate(me, opponents):
                         # you beat this opponent
                         me_win += 1       
         
-        #stage_score.insert(stg, round(float(me_win)/opp_count,2))
+        stage_score.insert(stg, round(float(me_win)/opp_count,2))
         # If treat it as a classification problem, only when the score is the highest is the winner
-        if me_win == opp_count:
-            stage_score.insert(stg, 1)
-        else:
-            stage_score.insert(stg, 0)
+        # if me_win == opp_count:
+        #     stage_score.insert(stg, 1)
+        # else:
+        #     stage_score.insert(stg, 0)
     return stage_score
 
 CARD_MAPPING = {

@@ -104,21 +104,14 @@ def evaluate_classifier(PATH, player):
     y_data=[]
     x_test=[]
     y_test=[]
-    judge = 0
     for i, flat in enumerate(train_data):
         for stg in flat:
             if i < len(train_data)/3:
                 x_test.append(stg[:13])
                 y_test.append(stg[13:])
             else:
-                if judge==1 and stg[13]==1:
-                    x_data.append(stg[:13])
-                    y_data.append(stg[13:])
-                    judge = 0
-                elif judge==0 and stg[13]==0: 
-                    x_data.append(stg[:13])
-                    y_data.append(stg[13:])
-                    judge = 1
+                x_data.append(stg[:13])
+                y_data.append(stg[13:])
 
     x_data = np.asarray(x_data)  
     y_data = np.asarray(y_data)  
