@@ -31,8 +31,7 @@ class Player(object):
                 model.add(Dense(units=50, activation='relu')) 
                 model.add(Dense(units=1, activation='sigmoid')) # output layer = 1
                 #loss = 'logcosh' -> less impact by outlier
-                #rmsprop
-                model.compile(loss='logcosh', optimizer='adam')
+                model.compile(loss='binary_crossentropy', optimizer='adam', metrics=["accuracy"])
 
             Player.PLAYER_MODEL[player_name] = model
         else:
@@ -50,7 +49,7 @@ class Player(object):
     def is_bluffing_guy(self):
         for round_seq in (0, 1, 2, 3):
             if self.is_known_guy or len(Player.TRAIN_COST[self.player_name][round_seq]) > 10:
-                if sum(Player.TRAIN_COST[self.player_name][round_seq][:5]) / 5 > 0.3:
+                if sum(Player.TRAIN_COST[self.player_name][0][round_seq][:5]) / 5 > 0.3:
                     return True
                 return False
         return None
@@ -123,8 +122,9 @@ if __name__ == '__main__':
    
     scoretest = player.model.evaluate(x_test, y_test, batch_size=32)
     
-    print 'TrainingSet lost %f \nTestingSet lost %f' % (scoretrain, scoretest)
-   
+    print 'TrainingSet lost %s \nTestingSet lost %s' % (scoretrain, scoretest)
+    
+    player.save_model()
     # list all data in history
     #print(history.history.keys())
    
