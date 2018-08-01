@@ -104,15 +104,22 @@ def evaluate_classifier(PATH, player):
     y_data=[]
     x_test=[]
     y_test=[]
+    judge = 0
     for i, flat in enumerate(train_data):
         for stg in flat:
             if i < len(train_data)/3:
                 x_test.append(stg[:13])
                 y_test.append(stg[13:])
             else:
-                x_data.append(stg[:13])
-                y_data.append(stg[13:])
-    
+                if judge==1 and stg[13]==1:
+                    x_data.append(stg[:13])
+                    y_data.append(stg[13:])
+                    judge = 0
+                elif judge==0 and stg[13]==0: 
+                    x_data.append(stg[:13])
+                    y_data.append(stg[13:])
+                    judge = 1
+
     x_data = np.asarray(x_data)  
     y_data = np.asarray(y_data)  
     x_test = np.asarray(x_test)  
@@ -120,12 +127,12 @@ def evaluate_classifier(PATH, player):
     
     #Classifier evaluation. Use newlabel_xxxx-xx-xx.pkl data
     player.model.fit(x_data, y_data, validation_split=0.3, epochs=100, batch_size=128,verbose=0)
-    scoretrain = player.model.evaluate(x_data, y_data)
-    scoretest = player.model.evaluate(x_test, y_test)
+    scoretrain = player.model.evaluate(x_data, y_data, batch_size=32)
+    scoretest = player.model.evaluate(x_test, y_test, batch_size=32)
     
-    # cost=player.model.predict(x_test)
-    # for v, y in zip(cost, y_test):
-    #     print 'real y: %s pred y: %s' % (y, v)
+    cost=player.model.predict(x_test)
+    for v, y in zip(cost, y_test):
+        print 'Real y: %s Pred y prob: %s' % (y, v)
 
     print 'TrainingSet loss and accu: %s \nTestingSet loss and accu: %s' % (scoretrain, scoretest)
     #player.save_model() 
