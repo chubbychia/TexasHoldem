@@ -124,10 +124,7 @@ if __name__ == '__main__':
     
     print 'TrainingSet lost %s \nTestingSet lost %s' % (scoretrain, scoretest)
     
-    player.save_model()
-    # list all data in history
-    #print(history.history.keys())
-   
-
-
-    # a.predict([0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 1)
+    #player.save_model()
+    cost=player.model.predict(x_test)
+    for v, y in zip(cost, y_test):
+        print 'real y: %s pred y: %s' % (y, v)
