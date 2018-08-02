@@ -80,46 +80,45 @@ class RefereePlayer(PokerClient):
             return FOLD
 
         elif the_pred_values:
-            #if len(the_pred_values) >= 4: #5~10 players (will provide auto dummy) 
-                if data["game"]["roundName"] == "Deal":  # Preflop
-                    if my_score > max(the_pred_values):
-                        return (BET, 3)
-                    elif my_score > min(the_pred_values):
-                        return CALL   
-                    # never fold    
-                elif data["game"]["roundName"] == "Flop":
-                    if my_score > max(the_pred_values):
-                        return (BET, 3)
-                    elif my_score > the_pred_values[1]:
-                        return (BET, 1)
-                    elif my_score > min(the_pred_values):
-                        return CALL 
-                    else:
-                        return FOLD    
-                elif data["game"]["roundName"] == "Turn":    
-                    if my_score > max(the_pred_values) and my_score > 0.85:
-                        return (BET, 8)
-                    elif my_score > max(the_pred_values):
-                        return (BET, 5)
-                    elif my_score > the_pred_values[1]:
-                        return (BET, 3)
-                    elif my_score > the_pred_values[int(len(the_pred_values)/2)]:
-                        return CALL  
-                    #elif my_score > min(the_pred_values):
-                        #return CALL    
-                    else:
-                        return FOLD  
-                elif data["game"]["roundName"] == "River":    
-                    if my_score > max(the_pred_values) and my_score > 0.85:
-                        return (BET, 8)
-                    elif my_score > max(the_pred_values):
-                        return (BET, 5)
-                    elif my_score > the_pred_values[1]:
-                        return (BET, 3)
-                    elif my_score > the_pred_values[int(len(the_pred_values)/2)]:
-                        return CALL
-                    else:
-                        return FOLD      
+            if data["game"]["roundName"] == "Deal":  # Preflop
+                if my_score > max(the_pred_values):
+                    return (BET, 2, 1)
+                elif my_score > min(the_pred_values):
+                    return CALL   
+                # never fold    
+            elif data["game"]["roundName"] == "Flop":
+                if my_score > max(the_pred_values):
+                    return (BET, 2, 1)
+                elif my_score > the_pred_values[1]:
+                    return (BET, 1, 0)
+                elif my_score > min(the_pred_values):
+                    return CALL 
+                else:
+                    return FOLD    
+            elif data["game"]["roundName"] == "Turn":    
+                if my_score > max(the_pred_values) and my_score > 0.85:
+                    return (BET, 6, 1)
+                elif my_score > max(the_pred_values):
+                    return (BET, 4, 1)
+                elif my_score > the_pred_values[1]:
+                    return (BET, 3, 0)
+                elif my_score > the_pred_values[int(len(the_pred_values)/2)]:
+                    return CALL  
+                #elif my_score > min(the_pred_values):
+                    #return CALL    
+                else:
+                    return FOLD  
+            elif data["game"]["roundName"] == "River":    
+                if my_score > max(the_pred_values) and my_score > 0.85:
+                    return (BET, 6, 1)
+                elif my_score > max(the_pred_values):
+                    return (BET, 4, 1)
+                elif my_score > the_pred_values[1]:
+                    return (BET, 3, 0)
+                elif my_score > the_pred_values[int(len(the_pred_values)/2)]:
+                    return CALL
+                else:
+                    return FOLD      
         return CHECK
 
 

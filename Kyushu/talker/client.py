@@ -292,12 +292,17 @@ class PokerClient(object):
             self.cardRanking[self.roundSeq] = self.my_card_ranking
             print "Cards are dealt, current ranking:%s" % self.cardRanking
 
-    def _act_action(self, do_act, bet_times=1):
+    def _act_action(self, do_act, bet_times=1, champ=0):
 
         a = {"action": 'fold', "amount": self.minBet}
 
         bet_mound = max(self._big_blind.get("amount", 0) * bet_times, 120 * bet_times,
                         self.minBet) if self._big_blind else self.minBet
+
+        # If it's the last fight, make sure you win
+        if self.chips < bet_mound:
+            if not champ:
+                do_act = FOLD
 
         if do_act == RAISE and self.big_blind_amount and self.minBet / self.big_blind_amount > 10:
             cprint("The minBet(%s) is too much to raise, use CALL instead" % self.minBet, "yellow")
@@ -514,7 +519,7 @@ class PokerClient(object):
                 action = self.predict(data)
 
                 if isinstance(action, tuple):
-                    return self._act_action(action[0], action[1])
+                    return self._act_action(action[0], action[1], action[2])
 
                 return self._act_action(action)
 
