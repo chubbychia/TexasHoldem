@@ -44,26 +44,24 @@ class RefereePlayer(PokerClient):
 
         super(RefereePlayer, self)._act_end_round(action, data)
         # the training data for user behavior
+        player = Player(DUMMY_PLAYER)
         user_behaviors = self._get_player_training_data(data["players"])
         if user_behaviors:
-            for player_name, behavior in user_behaviors.iteritems():
-                #player = Player(player_name)
-                player = Player(DUMMY_PLAYER)
+            for player_name, behavior in user_behaviors.iteritems():              
+                player.alias = player_name
                 self.save_append_training_data(behavior)
                 player.train(behavior)
                 if player.is_bluffing_guy is not None:
                     cprint("player(%s) is a(n) %s guy" % (
                         player_name, ("bluffing" if player.is_bluffing_guy else "honest")), "cyan")
-                #player = Player(DUMMY_PLAYER)
-                #player.train(behavior)
-
+             
     def behavior_predict(self, data=None):
         my_score = get_score(self.cards, self.board)
         predict_values = {}
         simulate_score = 0
-        dummyplayer = Player(DUMMY_PLAYER)
         for player_name, behavior in self.thisRoundUserBehavior_for_predict.iteritems():
             #print '*** Predict Round(%s) by attr: %s' % (self.roundSeq, behavior)
+            dummyplayer = Player(DUMMY_PLAYER,player_name)
             trans_behav = self._get_predicion_data(behavior, self.roundSeq)
             #print '*** Predict Round(%s) by transformed attr: %s' % (self.roundSeq, trans_behav)
             simulate_score = dummyplayer.predict(trans_behav, self.roundSeq)

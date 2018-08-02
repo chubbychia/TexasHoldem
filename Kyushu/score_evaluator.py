@@ -21,10 +21,10 @@ class Player(object):
     PLAYER_MODEL = {}
     TRAIN_COST = defaultdict(lambda: defaultdict(list))
 
-    def __init__(self, player_name):
+    def __init__(self, player_name, alias='default'):
         self.player_name = player_name
+        self.alias = alias
         self.is_known_guy = False
-
         if player_name not in Player.PLAYER_MODEL:
             if os.path.exists(self.model_path):
                 model = load_model(self.model_path)
@@ -52,11 +52,17 @@ class Player(object):
 
     @property
     def is_bluffing_guy(self):
-        for round_seq in (0, 1, 2, 3):
-            if self.is_known_guy or len(Player.TRAIN_COST[self.player_name][round_seq]) > 10:
-                if sum(Player.TRAIN_COST[self.player_name][0][round_seq][:5]) / 5 > 0.3:
-                    return True
-                return False
+        if len(Player.TRAIN_COST[self.alias]) > 0: # The player has been trained since program inits
+            #print '**** Player.TRAIN_COST[%s]: %s' %(self.alias, Player.TRAIN_COST[self.alias])
+            for round_seq in (0, 1, 2, 3):
+                if len(Player.TRAIN_COST[self.alias]) > round_seq: # If the trained rounds we are looking for are existed
+                    logs = len(Player.TRAIN_COST[self.alias][round_seq])
+                    if self.is_known_guy and logs > 1: # Already collect over 1 strategy logs for this player in round_seq
+                        abs_cost = [ abs(cost) for cost in Player.TRAIN_COST[self.alias][round_seq] ]
+                        if sum(abs_cost) / logs > 0.7:
+                        # Player.TRAIN_COST[c99ee435c9c0c0ccb662cc9e3769bcb3][2]= [0.19843163, 0.19698538, 0.18801071]
+                            return True
+                        return False
         return None
 
     def save_model(self):
@@ -71,16 +77,28 @@ class Player(object):
             x_data = np.reshape(np.asarray(data[:13]), (1, 13))
             y_data = np.asarray(data[13:])
             cost = self.model.train_on_batch(x_data, y_data)
-            print "Player(%s) Round(%s) train cost: %s, y_data:%s, y_pred:%s" % (self.player_name, i, cost, y_data, y_pred)
-            Player.TRAIN_COST[self.player_name][i].append(cost)
+            print "Player(%s) Round(%s) train cost: %s, y_data:%s, y_pred:%s" % (self.alias, i, cost, y_data, y_pred)
+            if y_pred < y_data: 
+                cost[0] = -cost[0] # underestimate, else overestimate 
+            Player.TRAIN_COST[self.alias][i].append(cost[0])
             # save the model
             self.save_model()
 
+    def _get_adjust_amount(self, round_seq):
+        logs = len(Player.TRAIN_COST[self.alias][round_seq])
+        if logs > 0: 
+            cost = Player.TRAIN_COST[self.alias][round_seq][logs-1:][0] # Use the latest training cost
+            print 'Player(%s) Round(%s) is bluffing, its cost: %s adjust cost: %s' %(self.alias, round_seq, cost, cost * 2/5)
+            return cost * 2/5
+        return 0
+
     def predict(self, predict_data, round_seq):
         try:
-            cost = Player.TRAIN_COST[self.player_name][round_seq]
             predict_value = self.model.predict(np.reshape(np.asarray(predict_data), (1, 13)))[0][0]
-            print "Player(%s) Round(%s) predict value: %s" % (self.player_name, round_seq, predict_value)
+            if self.is_bluffing_guy:
+                amount = self._get_adjust_amount(round_seq)
+                predict_value = predict_value - amount
+            print "Player(%s) Round(%s) predict value: %s" % (self.alias, round_seq, predict_value)
             return predict_value
         except Exception as err:
             print "fails to predict user behavior, because:%s" % err
@@ -166,7 +184,7 @@ def train_evaluate_class(PATH, player):
 
 
 if __name__ == '__main__':
-    player = Player('XXXX')
+    player = Player('XXXX','Evaluator')
     if len(sys.argv) < 2: # 1
         print "Usage:", sys.argv[0], "<FILENAME>"
         sys.exit(1)       # 2
