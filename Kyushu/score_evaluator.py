@@ -86,7 +86,40 @@ class Player(object):
             print "fails to predict user behavior, because:%s" % err
             return None
 
-def evaluate_classifier(PATH, player):
+def model_predict(PATH, player):
+    train_data = []
+    if os.path.exists(PATH):
+        with open(PATH, 'rb') as f:
+            while True:
+                try:
+                    train_data.append(pickle.load(f))
+                except EOFError:
+                    break
+        #print len(train_data)
+    else:
+        print 'No such training file %s' % (PATH)
+
+    x_test=[]
+    y_test=[]
+    for i, flat in enumerate(train_data):
+        for stg in flat:
+            if 1000 < i < 2000:
+                x_test.append(stg[:13])
+                y_test.append(stg[13:])
+        
+    x_test = np.asarray(x_test)  
+    y_test = np.asarray(y_test)  
+    
+    results = player.model.predict(x_test)
+    for p, y in zip(results, y_test):
+        diff = abs(y-p)
+        print 'Real y: %s Pred y prob: %s' % (y, p)
+        if diff > 0.5:
+            print 'Bluffing! The difference: %s' % (diff)
+        
+
+
+def train_evaluate_class(PATH, player):
    
     train_data = []
     if os.path.exists(PATH):
@@ -141,8 +174,8 @@ if __name__ == '__main__':
     fname = sys.argv[1]
     NEWLABEL_PATH = os.path.join(current_folder, 'training/newlabel_'+ fname + '.pkl')
     TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ fname + '.pkl')
-    evaluate_classifier(TRAINDATA_PATH, player)
-    
+    #evaluate_classifier(TRAINDATA_PATH, player)
+    model_predict(TRAINDATA_PATH, player)
     # regression problem 
     # 
     # train_data = []
