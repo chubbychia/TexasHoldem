@@ -72,54 +72,54 @@ class RefereePlayer(PokerClient):
         is_large_bet = self.minBet / self.big_blind_amount > 10 if self.big_blind_amount else False
 
         the_pred_values = sorted(filter(None, predict_values.values()), reverse=True)
-        print "***behavior predict:%s, my_score(%s)" % (predict_values.values(), my_score)
+        cprint ("*** behavior predict:%s, my_score(%s)" % (predict_values.values(), my_score), "green")
 
         if is_large_bet:
             if my_score > max(the_pred_values):
-                return CALL
+                return (CALL, 1, 1, my_score)
             return FOLD
 
         elif the_pred_values:
             if data["game"]["roundName"] == "Deal":  # Preflop
                 if my_score > max(the_pred_values):
-                    return (BET, 2, 1)
+                    return (CALL, 1, 1, my_score)
                 elif my_score > min(the_pred_values):
-                    return CALL   
+                    return (CALL, 1, 0, my_score)
                 # never fold    
             elif data["game"]["roundName"] == "Flop":
                 if my_score > max(the_pred_values):
-                    return (BET, 2, 1)
+                    return (BET, 2, 1, my_score)
                 elif my_score > the_pred_values[1]:
-                    return (BET, 1, 0)
+                    return (BET, 1, 0, my_score)
                 elif my_score > min(the_pred_values):
-                    return CALL 
+                    return (CALL, 1, 0, my_score) 
                 else:
                     return FOLD    
             elif data["game"]["roundName"] == "Turn":    
-                if my_score > max(the_pred_values) and my_score > 0.85:
-                    return (BET, 6, 1)
+                if my_score > max(the_pred_values) and my_score > 0.9:
+                    return (BET, 6, 1, my_score)
                 elif my_score > max(the_pred_values):
-                    return (BET, 4, 1)
+                    return (BET, 4, 1, my_score)
                 elif my_score > the_pred_values[1]:
-                    return (BET, 3, 0)
+                    return (BET, 3, 0, my_score)
                 elif my_score > the_pred_values[int(len(the_pred_values)/2)]:
-                    return CALL  
-                #elif my_score > min(the_pred_values):
-                    #return CALL    
+                    return (CALL, 1, 0, my_score)  
+                elif my_score > min(the_pred_values):
+                    return (CALL, 1, 0, my_score)    
                 else:
                     return FOLD  
             elif data["game"]["roundName"] == "River":    
-                if my_score > max(the_pred_values) and my_score > 0.85:
-                    return (BET, 6, 1)
+                if my_score > max(the_pred_values) and my_score > 0.9:
+                    return (BET, 6, 1, my_score)
                 elif my_score > max(the_pred_values):
-                    return (BET, 4, 1)
+                    return (BET, 4, 1, my_score)
                 elif my_score > the_pred_values[1]:
-                    return (BET, 3, 0)
-                elif my_score > the_pred_values[int(len(the_pred_values)/2)]:
-                    return CALL
+                    return (BET, 3, 0, my_score)
+                #elif my_score > the_pred_values[int(len(the_pred_values)/2)]:
+                    #return (CALL, 1, 0, my_score)
                 else:
                     return FOLD      
-        return CHECK
+        return (CHECK, 1, 0, my_score)
 
 
     def predict(self, data=None):

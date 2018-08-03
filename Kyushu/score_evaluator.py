@@ -57,7 +57,7 @@ class Player(object):
             for round_seq in (0, 1, 2, 3):
                 if len(Player.TRAIN_COST[self.alias]) > round_seq: # If the trained rounds we are looking for are existed
                     logs = len(Player.TRAIN_COST[self.alias][round_seq])
-                    if self.is_known_guy and logs > 1: # Already collect over 1 strategy logs for this player in round_seq
+                    if self.is_known_guy and logs > 2: # Already collect over ? strategy logs for this player in round_seq
                         abs_cost = [ abs(cost) for cost in Player.TRAIN_COST[self.alias][round_seq] ]
                         if sum(abs_cost) / logs > 0.7:
                         # Player.TRAIN_COST[c99ee435c9c0c0ccb662cc9e3769bcb3][2]= [0.19843163, 0.19698538, 0.18801071]
@@ -77,7 +77,7 @@ class Player(object):
             x_data = np.reshape(np.asarray(data[:13]), (1, 13))
             y_data = np.asarray(data[13:])
             cost = self.model.train_on_batch(x_data, y_data)
-            print "Player(%s) Round(%s) train cost: %s, y_data:%s, y_pred:%s" % (self.alias, i, cost, y_data, y_pred)
+            print "Player(%s) Round(%s) train cost: %s, y_data:%s, y_pred:%s, feature:%s " % (self.alias, i, cost, y_data, y_pred, data[5:13])
             if y_pred < y_data: 
                 cost[0] = -cost[0] # underestimate, else overestimate 
             Player.TRAIN_COST[self.alias][i].append(cost[0])
@@ -88,8 +88,9 @@ class Player(object):
         logs = len(Player.TRAIN_COST[self.alias][round_seq])
         if logs > 0: 
             cost = Player.TRAIN_COST[self.alias][round_seq][logs-1:][0] # Use the latest training cost
-            print 'Player(%s) Round(%s) is bluffing, its cost: %s adjust cost: %s' %(self.alias, round_seq, cost, cost * 2/5)
-            return cost * 2/5
+            adj = cost * 2/5
+            print 'Player(%s) Round(%s) is bluffing, its cost: %s adjust cost: %s' %(self.alias, round_seq, cost, adj)
+            return adj
         return 0
 
     def predict(self, predict_data, round_seq):
@@ -157,12 +158,14 @@ def train_evaluate_class(PATH, player):
     y_test=[]
     for i, flat in enumerate(train_data):
         for stg in flat:
-            if i < len(train_data)/3:
-                x_test.append(stg[:13])
-                y_test.append(stg[13:])
-            else:
-                x_data.append(stg[:13])
-                y_data.append(stg[13:])
+            valid = [x for x in stg[:13] if x]
+            if len(valid) > 0:
+                if i < len(train_data)/3:
+                    x_test.append(stg[:13])
+                    y_test.append(stg[13:])
+                else:
+                    x_data.append(stg[:13])
+                    y_data.append(stg[13:])
 
     x_data = np.asarray(x_data)  
     y_data = np.asarray(y_data)  
@@ -192,7 +195,7 @@ if __name__ == '__main__':
     fname = sys.argv[1]
     NEWLABEL_PATH = os.path.join(current_folder, 'training/newlabel_'+ fname + '.pkl')
     TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ fname + '.pkl')
-    #evaluate_classifier(TRAINDATA_PATH, player)
+    train_evaluate_class(TRAINDATA_PATH, player)
     model_predict(TRAINDATA_PATH, player)
     # regression problem 
     # 

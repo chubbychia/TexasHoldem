@@ -292,17 +292,18 @@ class PokerClient(object):
             self.cardRanking[self.roundSeq] = self.my_card_ranking
             print "Cards are dealt, current ranking:%s" % self.cardRanking
 
-    def _act_action(self, do_act, bet_times=1, champ=0):
+    def _act_action(self, do_act, bet_times=1,champ=0, my_score=0):
 
         a = {"action": 'fold', "amount": self.minBet}
 
         bet_mound = max(self._big_blind.get("amount", 0) * bet_times, 120 * bet_times,
                         self.minBet) if self._big_blind else self.minBet
 
-        # If it's the last fight, make sure you win
-        if self.chips < bet_mound:
-            if not champ:
+        #If it's the last fight, make sure you win
+        if self.chips < 2 * bet_mound:
+            if not champ and my_score < 0.92:
                 do_act = FOLD
+                cprint("Max? %s My Score: %s My chips: %s. It's too risky to bet, use FOLD instead" % (champ, my_score,self.chips), "yellow")
 
         if do_act == RAISE and self.big_blind_amount and self.minBet / self.big_blind_amount > 10:
             cprint("The minBet(%s) is too much to raise, use CALL instead" % self.minBet, "yellow")
@@ -450,17 +451,19 @@ class PokerClient(object):
             if not features:
                 continue            
            
+            # Origianl simulation way
+            # h_cards = player["cards"]
+            # user_score = [get_score(h_cards, self.board[:c]) for c in (0, 3, 4, 5)]
+
+            Ex: if one wins in flop, marking the succeeding rounds score to 1
             others_rank = [value[0] for key, value in user_rank.iteritems() if key !=player["playerName"]]
             user_score = evaluate_stage_winrate(user_rank[player["playerName"]][0], others_rank)
-            
-            # 2018-07-31. Use 0 to label losing, 1 to lable winning. 
-            # Ex: if one wins in flop, marking the succeeding rounds score to 1
             if player["winMoney"]:
                 i = self.roundSeq
                 while i < len(Round.ALL):
                     user_score[i] = 1
                     i += 1
-                #print 'Round (%s) Player %s' % (self.roundSeq, player["playerName"])
+            print 'Round (%s) Player %s' % (self.roundSeq, player["playerName"])
             
             #print '*** User %s score: %s' % (player["playerName"],user_score)
             for seq, score in enumerate(user_score):
@@ -473,15 +476,18 @@ class PokerClient(object):
                 feature_temp += features[pre_boundary:boundary]
                 feature_temp += [0] * (14 - len(feature_temp))
                 feature_temp[13] = score
-                round_train_data[player["playerName"]].append(feature_temp)
+                # skip nonsence data  
+                valid = [x for x in feature_temp[:13] if x]
+                if len(valid) > 0:
+                    round_train_data[player["playerName"]].append(feature_temp)
                 
                 # the user is fold, stop training the following round
                 if features[seq] == 1:
                     break
 
-        for player, data in round_train_data.iteritems():
-            for i, round_data in enumerate(data):
-                print '*** Round(%s) Player %s training features: %s' %(i, player, round_data)
+        # for player, data in round_train_data.iteritems():
+        #     for i, round_data in enumerate(data):
+        #         print '*** Round(%s) Player %s training features: %s' %(i, player, round_data)
 
         return round_train_data
 
@@ -511,7 +517,7 @@ class PokerClient(object):
                 # __bet -> minBet > 0
                 self.minBet = data['self']['minBet']
                 self.bet = data['self']['bet']
-                
+                self.chips = data['self']['chips']
                 # reconnection the cards is empty
                 if not self.cards:
                     self.cards = data['self']['cards']
@@ -519,7 +525,7 @@ class PokerClient(object):
                 action = self.predict(data)
 
                 if isinstance(action, tuple):
-                    return self._act_action(action[0], action[1], action[2])
+                    return self._act_action(action[0], action[1], action[2], action[3])
 
                 return self._act_action(action)
 
