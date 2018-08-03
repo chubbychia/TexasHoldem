@@ -455,7 +455,7 @@ class PokerClient(object):
             # h_cards = player["cards"]
             # user_score = [get_score(h_cards, self.board[:c]) for c in (0, 3, 4, 5)]
 
-            Ex: if one wins in flop, marking the succeeding rounds score to 1
+            #Ex: if one wins in flop, marking the succeeding rounds score to 1
             others_rank = [value[0] for key, value in user_rank.iteritems() if key !=player["playerName"]]
             user_score = evaluate_stage_winrate(user_rank[player["playerName"]][0], others_rank)
             if player["winMoney"]:
