@@ -1,6 +1,7 @@
 import os
 import sys
 import numpy as np
+from ast import literal_eval
 from collections import defaultdict
 from keras.models import Sequential
 from keras.models import load_model
@@ -77,7 +78,7 @@ class Player(object):
             x_data = np.reshape(np.asarray(data[:13]), (1, 13))
             y_data = np.asarray(data[13:])
             cost = self.model.train_on_batch(x_data, y_data)
-            print "Player(%s) Round(%s) train cost: %s, y_data:%s, y_pred:%s, feature:%s " % (self.alias, i, cost, y_data, y_pred, data[5:13])
+            print "Player(%s) Round(%s) train cost: %s, y_data:%s, y_pred:%s, feature:%s " % (self.alias, i, cost, y_data, y_pred, data[4:13])
             if y_pred < y_data: 
                 cost[0] = -cost[0] # underestimate, else overestimate 
             Player.TRAIN_COST[self.alias][i].append(cost[0])
@@ -108,13 +109,19 @@ class Player(object):
 def model_predict(PATH, player):
     train_data = []
     if os.path.exists(PATH):
-        with open(PATH, 'rb') as f:
-            while True:
-                try:
-                    train_data.append(pickle.load(f))
-                except EOFError:
-                    break
-        #print len(train_data)
+        if PATH.endswith('pkl'):
+            with open(PATH, 'rb') as f:
+                while True:
+                    try:
+                        train_data.append(pickle.load(f))
+                    except EOFError:
+                        break
+            #print len(train_data)
+        else:
+            with open(PATH) as f:
+                for line in f:
+                    mainlist = list(literal_eval(line.strip()))
+                    train_data.append(mainlist)
     else:
         print 'No such training file %s' % (PATH)
 
@@ -139,16 +146,23 @@ def model_predict(PATH, player):
 
 
 def train_evaluate_class(PATH, player):
-   
     train_data = []
     if os.path.exists(PATH):
-        with open(PATH, 'rb') as f:
-            while True:
-                try:
-                    train_data.append(pickle.load(f))
-                except EOFError:
-                    break
-        #print len(train_data)
+        if PATH.endswith('pkl'):
+            with open(PATH, 'rb') as f:
+                while True:
+                    try:
+                        train_data.append(pickle.load(f))
+                    except EOFError:
+                        break
+           
+        else:
+            with open(PATH) as f:
+                for line in f:
+                    mainlist = list(literal_eval(line.strip()))
+                    train_data.append(mainlist)
+
+        #print train_data
     else:
         print 'No such training file %s' % (PATH)
 
@@ -158,7 +172,7 @@ def train_evaluate_class(PATH, player):
     y_test=[]
     for i, flat in enumerate(train_data):
         for stg in flat:
-            valid = [x for x in stg[:13] if x]
+            valid = [x for x in stg[5:13] if x]
             if len(valid) > 0:
                 if i < len(train_data)/3:
                     x_test.append(stg[:13])
@@ -182,7 +196,7 @@ def train_evaluate_class(PATH, player):
         print 'Real y: %s Pred y prob: %s' % (y, v)
 
     print 'TrainingSet loss and accu: %s \nTestingSet loss and accu: %s' % (scoretrain, scoretest)
-    #player.save_model() 
+    player.save_model()    
    
 
 
@@ -193,10 +207,10 @@ if __name__ == '__main__':
         sys.exit(1)       # 2
 
     fname = sys.argv[1]
-    NEWLABEL_PATH = os.path.join(current_folder, 'training/newlabel_'+ fname + '.pkl')
-    TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ fname + '.pkl')
+    NEWLABEL_PATH = os.path.join(current_folder, 'training/newlabel_'+ fname)
+    TRAINDATA_PATH = os.path.join(current_folder, 'training/'+ fname)
     train_evaluate_class(TRAINDATA_PATH, player)
-    model_predict(TRAINDATA_PATH, player)
+    #model_predict(TRAINDATA_PATH, player)
     # regression problem 
     # 
     # train_data = []

@@ -358,7 +358,7 @@ class HandEvaluator:
         rank = evaluator.evaluate_rank(cards)
 
         winsum = 0
-        sampling = 1000
+        sampling = 100
         for _ in range(sampling):
             possible_opponent_hands = list(combinations(LookupTables.deck - set(cards), len(hand)))
             hands_beaten = 0

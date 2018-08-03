@@ -371,7 +371,7 @@ class PokerClient(object):
         # },
         # round features:
         #  0~3: Fold:0, 0, 0, 0
-        #    4: reverse 
+        #    4:  
         #  call_t, bet_t, raise_t, bet_a, all_in, chips, pot, survived
         #  5~12: preflop
         #  13~20: flop
@@ -379,7 +379,7 @@ class PokerClient(object):
         #  29:36: river
         #  label: score
         features = self.thisRoundUserBehavior.get(player_action["playerName"], [0] * 38)
-
+        
         if player_action["action"] == 'fold':
             self.thisRoundUserBehavior_for_predict.pop(player_action["playerName"], None)
             features[self.roundSeq] = 1
@@ -424,8 +424,9 @@ class PokerClient(object):
         pre_boundary = 5
         if seq:
             pre_boundary = (seq - 1) * 8 + 13
-        feature_temp = features[0:5] # folding info + reverse
+        feature_temp = features[0:5]         
         feature_temp += features[pre_boundary:boundary]  #Only 13 values. Omit label
+        feature_temp[4] = seq
         return feature_temp
         
         
@@ -463,7 +464,7 @@ class PokerClient(object):
                 while i < len(Round.ALL):
                     user_score[i] = 1
                     i += 1
-            print 'Round (%s) Player %s' % (self.roundSeq, player["playerName"])
+            #print 'Round (%s) Player %s' % (self.roundSeq, player["playerName"])
             
             #print '*** User %s score: %s' % (player["playerName"],user_score)
             for seq, score in enumerate(user_score):
@@ -471,13 +472,14 @@ class PokerClient(object):
                 pre_boundary = 5
                 if seq:
                     pre_boundary = (seq - 1) * 8 + 13
-                feature_temp = features[0:5] # folding info + reverse
+                feature_temp = features[0:5] # folding info + round
                 # masking the features per round
                 feature_temp += features[pre_boundary:boundary]
                 feature_temp += [0] * (14 - len(feature_temp))
+                feature_temp[4] = seq
                 feature_temp[13] = score
                 # skip nonsence data  
-                valid = [x for x in feature_temp[:13] if x]
+                valid = [x for x in feature_temp[5:13] if x]
                 if len(valid) > 0:
                     round_train_data[player["playerName"]].append(feature_temp)
                 
