@@ -60,7 +60,7 @@ class Player(object):
                     logs = len(Player.TRAIN_COST[self.alias][round_seq])
                     if self.is_known_guy and logs > 2: # Already collect over ? strategy logs for this player in round_seq
                         abs_cost = [ abs(cost) for cost in Player.TRAIN_COST[self.alias][round_seq] ]
-                        if sum(abs_cost) / logs > 0.7:
+                        if sum(abs_cost) / logs > 0.9:
                         # Player.TRAIN_COST[c99ee435c9c0c0ccb662cc9e3769bcb3][2]= [0.19843163, 0.19698538, 0.18801071]
                             return True
                         return False
@@ -191,9 +191,9 @@ def train_evaluate_class(PATH, player):
     scoretrain = player.model.evaluate(x_data, y_data, batch_size=32)
     scoretest = player.model.evaluate(x_test, y_test, batch_size=32)
     
-    cost=player.model.predict(x_test)
-    for v, y in zip(cost, y_test):
-        print 'Real y: %s Pred y prob: %s' % (y, v)
+    # cost=player.model.predict(x_test)
+    # for v, y in zip(cost, y_test):
+    #     print 'Real y: %s Pred y prob: %s' % (y, v)
 
     print 'TrainingSet loss and accu: %s \nTestingSet loss and accu: %s' % (scoretrain, scoretest)
     player.save_model()    

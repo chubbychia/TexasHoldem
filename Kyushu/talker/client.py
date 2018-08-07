@@ -255,7 +255,7 @@ class PokerClient(object):
             if p["winMoney"]:
                 cprint("win the money:%s, my chips:%s" % (p["winMoney"], p["chips"]), 'magenta')
             else:
-                cprint("lost the money:%s, my chips:%s" % (sum(self.myBet), p["chips"]), 'red')
+                cprint("lose the money:%s, my chips:%s" % (sum(self.myBet), p["chips"]), 'red')
         else:
             cprint("round end", 'white')
 
@@ -301,7 +301,7 @@ class PokerClient(object):
 
         #If it's the last fight, make sure you win
         if self.chips < 2 * bet_mound:
-            if not champ and my_score < 0.92:
+            if not champ and my_score < 0.95:
                 do_act = FOLD
                 cprint("Max? %s My Score: %s My chips: %s. It's too risky to bet, use FOLD instead" % (champ, my_score,self.chips), "yellow")
 

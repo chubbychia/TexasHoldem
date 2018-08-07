@@ -358,7 +358,7 @@ class HandEvaluator:
         rank = evaluator.evaluate_rank(cards)
 
         winsum = 0
-        sampling = 100
+        sampling = 50
         for _ in range(sampling):
             possible_opponent_hands = list(combinations(LookupTables.deck - set(cards), len(hand)))
             hands_beaten = 0
@@ -369,7 +369,7 @@ class HandEvaluator:
                     hands_beaten += 1
                 elif rank == possible_opponent_rank:
                     hands_beaten += 0.5
-            winsum += float(hands_beaten) / len(list(possible_opponent_hands))
+            winsum += (float(hands_beaten) / len(list(possible_opponent_hands)))
         return float(winsum)/sampling
 
     evaluate_hand = staticmethod(evaluate_hand)

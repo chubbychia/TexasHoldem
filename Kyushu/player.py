@@ -76,6 +76,7 @@ class RefereePlayer(PokerClient):
 
         if is_large_bet:
             if my_score > max(the_pred_values):
+                cprint("is_large_bet, my score: %s, first score: %s" % (my_score, max(the_pred_values)), 'red')
                 return (CALL, 1, 1, my_score)
             return FOLD
 
@@ -88,7 +89,7 @@ class RefereePlayer(PokerClient):
                 # never fold    
             elif data["game"]["roundName"] == "Flop":
                 if my_score > max(the_pred_values):
-                    return (BET, 2, 1, my_score)
+                    return (BET, 1, 1, my_score)
                 elif my_score > the_pred_values[1]:
                     return (BET, 1, 0, my_score)
                 elif my_score > min(the_pred_values):
@@ -96,27 +97,35 @@ class RefereePlayer(PokerClient):
                 else:
                     return FOLD    
             elif data["game"]["roundName"] == "Turn":    
-                if my_score > max(the_pred_values) and my_score > 0.9:
-                    return (BET, 6, 1, my_score)
+                if my_score > 0.94:
+                    return (BET, 8, 1, my_score)
+                elif my_score > max(the_pred_values) and my_score > 0.9:
+                    return (BET, 8, 1, my_score)
+                elif my_score > max(the_pred_values) and my_score > 0.8:
+                    return (BET, 5, 1, my_score)
                 elif my_score > max(the_pred_values):
                     return (BET, 4, 1, my_score)
                 elif my_score > the_pred_values[1]:
                     return (BET, 3, 0, my_score)
                 elif my_score > the_pred_values[int(len(the_pred_values)/2)]:
                     return (CALL, 1, 0, my_score)  
-                elif my_score > min(the_pred_values):
-                    return (CALL, 1, 0, my_score)    
+                #elif my_score > min(the_pred_values):
+                    #return (CALL, 1, 0, my_score)    
                 else:
                     return FOLD  
             elif data["game"]["roundName"] == "River":    
-                if my_score > max(the_pred_values) and my_score > 0.9:
-                    return (BET, 6, 1, my_score)
+                if my_score > 0.94:
+                    return (BET, 8, 1, my_score)
+                elif my_score > max(the_pred_values) and my_score > 0.9:
+                    return (BET, 8, 1, my_score)
+                elif my_score > max(the_pred_values) and my_score > 0.8:
+                    return (BET, 5, 1, my_score)
                 elif my_score > max(the_pred_values):
                     return (BET, 4, 1, my_score)
                 elif my_score > the_pred_values[1]:
                     return (BET, 3, 0, my_score)
-                #elif my_score > the_pred_values[int(len(the_pred_values)/2)]:
-                    #return (CALL, 1, 0, my_score)
+                elif my_score > the_pred_values[int(len(the_pred_values)/2)]:
+                    return (CALL, 1, 0, my_score)
                 else:
                     return FOLD      
         return (CHECK, 1, 0, my_score)
